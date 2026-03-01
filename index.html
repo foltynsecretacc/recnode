@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Video Player - Live Stream Support</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: black;
+            overflow: hidden;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: black;
+            position: relative;
+        }
+        
+        #videoPlayer {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: black;
+        }
+        
+        #youtubePlayer {
+            width: 100%;
+            height: 100%;
+            background: black;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Hide YouTube elements */
+        #youtubePlayer iframe {
+            pointer-events: none;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+        
+        /* Additional overlay to block any YouTube UI */
+        #youtubePlayer::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .selector-container {
+            background: #1a1a1a;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            max-width: 700px;
+            width: 100%;
+            border: 2px solid #333;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.7);
+        }
+        
+        .selector-container h2 {
+            margin-bottom: 30px;
+            color: #fff;
+            font-size: 32px;
+            font-weight: 300;
+        }
+        
+        .selector-container h2 span {
+            color: #4CAF50;
+            font-weight: 600;
+        }
+        
+        .tab-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 12px 25px;
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .tab.active {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .tab.live-tab {
+            border: 1px solid #ff4444;
+            color: #ff4444;
+        }
+        
+        .tab.live-tab.active {
+            background: #ff4444;
+            color: white;
+            border-color: #ff4444;
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .file-input-label {
+            display: inline-block;
+            padding: 18px 50px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
+            margin: 20px 0;
+        }
+        
+        .file-input-label:hover {
+            background: #45a049;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.5);
+        }
+        
+        .file-input-label:active {
+            transform: scale(0.95);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        #selectedFileInfo {
+            margin-top: 20px;
+            color: #4CAF50;
+            font-size: 14px;
+            min-height: 20px;
+        }
+        
+        .url-input-container {
+            padding: 20px 0;
+        }
+        
+        .url-input-container p {
+            color: #888;
+            margin-bottom: 20px;
+        }
+        
+        .live-badge {
+            display: inline-block;
+            background: #ff4444;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; box-shadow: 0 0 20px #ff4444; }
+            100% { opacity: 0.8; }
+        }
+        
+        #streamUrl {
+            width: 100%;
+            padding: 18px 20px;
+            background: #2a2a2a;
+            border: 2px solid #3a3a3a;
+            border-radius: 50px;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        #streamUrl:focus {
+            outline: none;
+            border-color: #ff4444;
+            background: #2a2a2a;
+        }
+        
+        #streamUrl::placeholder {
+            color: #666;
+        }
+        
+        .stream-button {
+            padding: 18px 50px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(255, 68, 68, 0.4);
+        }
+        
+        .stream-button:hover {
+            background: #cc3333;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(255, 68, 68, 0.5);
+        }
+        
+        .stream-button:active {
+            transform: scale(0.95);
+        }
+        
+        #youtubeUrl {
+            width: 100%;
+            padding: 18px 20px;
+            background: #2a2a2a;
+            border: 2px solid #3a3a3a;
+            border-radius: 50px;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        #youtubeUrl:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: #2a2a2a;
+        }
+        
+        #youtubeUrl::placeholder {
+            color: #666;
+        }
+        
+        .youtube-button {
+            padding: 18px 50px;
+            background: #FF0000;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(255, 0, 0, 0.4);
+        }
+        
+        .youtube-button:hover {
+            background: #cc0000;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(255, 0, 0, 0.5);
+        }
+        
+        .examples {
+            margin-top: 30px;
+            padding: 20px;
+            background: #222;
+            border-radius: 20px;
+            text-align: left;
+        }
+        
+        .examples p {
+            color: #888;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .examples ul {
+            list-style: none;
+            color: #4CAF50;
+            font-size: 12px;
+        }
+        
+        .examples li {
+            margin: 5px 0;
+            padding: 8px 12px;
+            background: #2a2a2a;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .examples li:hover {
+            background: #333;
+            color: #ff4444;
+        }
+        
+        .examples.live-examples li {
+            color: #ff8888;
+        }
+        
+        .examples.live-examples li:hover {
+            background: #333;
+            color: #ff4444;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .video-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 11px;
+            z-index: 100;
+            pointer-events: none;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 15px;
+            border-radius: 50px;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 25px 40px;
+            border-radius: 60px;
+            z-index: 2000;
+            display: none;
+            border: 2px solid #4CAF50;
+            box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
+        }
+        
+        .loading.live-loading {
+            border-color: #ff4444;
+            box-shadow: 0 0 30px rgba(255, 68, 68, 0.3);
+        }
+        
+        .loading.show {
+            display: block;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .exit-note {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            z-index: 100;
+            pointer-events: none;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 15px;
+            border-radius: 50px;
+        }
+        
+        .live-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 12px;
+            z-index: 100;
+            pointer-events: none;
+            background: #ff4444;
+            padding: 5px 15px;
+            border-radius: 50px;
+            animation: pulse 2s infinite;
+            font-weight: bold;
+        }
+        
+        .loop-indicator {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 11px;
+            z-index: 100;
+            pointer-events: none;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 15px;
+            border-radius: 50px;
+        }
+        
+        .source-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            z-index: 100;
+            pointer-events: none;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 15px;
+            border-radius: 50px;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .error-message {
+            color: #ff4444;
+            margin-top: 15px;
+            font-size: 14px;
+            min-height: 20px;
+        }
+        
+        .stream-info {
+            background: #2a2a2a;
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            border-left: 4px solid #ff4444;
+        }
+        
+        .stream-info h4 {
+            color: #ff4444;
+            margin-bottom: 10px;
+        }
+        
+        .stream-info p {
+            color: #aaa;
+            font-size: 13px;
+            margin: 5px 0;
+        }
+        
+        .stream-info code {
+            background: #1a1a1a;
+            padding: 3px 8px;
+            border-radius: 5px;
+            color: #ff8888;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <video id="videoPlayer" playsinline style="display: none;"></video>
+        <div id="youtubePlayer" style="display: none;"></div>
+    </div>
+    
+    <div id="overlay">
+        <div class="selector-container">
+            <h2>🎬 <span>Universal</span> Video Player</h2>
+            
+            <div class="tab-container">
+                <button class="tab active" onclick="switchTab('file')">📁 Local File</button>
+                <button class="tab" onclick="switchTab('youtube')">▶️ YouTube</button>
+                <button class="tab live-tab" onclick="switchTab('live')">🔴 LIVE Streams</button>
+            </div>
+            
+            <div id="fileTab" class="tab-content active">
+                <p style="color: #888; margin-bottom: 20px;">Select a video file from your device</p>
+                
+                <label for="fileInput" class="file-input-label">
+                    📁 Browse Files
+                </label>
+                <input type="file" id="fileInput" accept="video/*">
+                
+                <div id="selectedFileInfo"></div>
+            </div>
+            
+            <div id="youtubeTab" class="tab-content">
+                <div class="url-input-container">
+                    <p style="color: #888; margin-bottom: 20px;">Paste any YouTube link</p>
+                    
+                    <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=...">
+                    
+                    <button class="youtube-button" onclick="loadYouTubeVideo()">
+                        ▶️ Load & Play
+                    </button>
+                    
+                    <div class="examples">
+                        <p>📋 Examples (click to try):</p>
+                        <ul>
+                            <li onclick="fillExample('youtube', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')">🎵 Rick Astley - Never Gonna Give You Up</li>
+                            <li onclick="fillExample('youtube', 'https://youtu.be/jNQXAC9IVRw')">📹 First YouTube video ever</li>
+                            <li onclick="fillExample('youtube', 'https://www.youtube.com/watch?v=QH2-TGUlwu4')">🌌 4K Nature Relaxation</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="liveTab" class="tab-content">
+                <div class="url-input-container">
+                    <span class="live-badge">🔴 LIVE</span>
+                    <p>Paste any live stream URL (HLS, RTMP, YouTube Live, Twitch, etc.)</p>
+                    
+                    <input type="text" id="streamUrl" placeholder="https://example.com/stream.m3u8 or YouTube Live URL">
+                    
+                    <button class="stream-button" onclick="loadLiveStream()">
+                        🔴 Connect to Live Stream
+                    </button>
+                    
+                    <div class="stream-info">
+                        <h4>Supported Live Formats:</h4>
+                        <p>• <strong>YouTube Live</strong> - Any YouTube live stream URL</p>
+                        <p>• <strong>HLS</strong> - <code>.m3u8</code> live streams</p>
+                        <p>• <strong>DASH</strong> - <code>.mpd</code> live streams</p>
+                        <p>• <strong>RTMP</strong> - <code>rtmp://</code> streams (if browser supports)</p>
+                        <p>• <strong>Twitch</strong> - Twitch.tv live streams (via embed)</p>
+                    </div>
+                    
+                    <div class="examples live-examples">
+                        <p>🔴 Live Stream Examples (click to try):</p>
+                        <ul>
+                            <li onclick="fillExample('live', 'https://www.youtube.com/watch?v=21X5lGlDOfg')">📺 NASA Live (YouTube Live)</li>
+                            <li onclick="fillExample('live', 'https://www.twitch.tv/riotgames')">🎮 Twitch Live - Riot Games</li>
+                            <li onclick="fillExample('live', 'https://www.youtube.com/watch?v=5qap5aO4i9A')">🌍 Earth View from Space (Live)</li>
+                            <li onclick="fillExample('live', 'https://www.twitch.tv/xqc')">🎮 Twitch Live - xQc</li>
+                            <li onclick="fillExample('live', 'rtmp://live.example.com/stream')">🔧 Test RTMP Stream</li>
+                        </ul>
+                    </div>
+                    
+                    <p style="color: #666; font-size: 12px; margin-top: 20px;">
+                        ⚠️ Note: Some live streams may require CORS support or specific formats
+                    </p>
+                </div>
+            </div>
+            
+            <div class="error-message" id="errorMessage"></div>
+            
+            <p style="margin-top: 30px; font-size: 12px; color: #666; border-top: 1px solid #333; padding-top: 20px;">
+                ⚠️ Press ESC to exit fullscreen (only way to stop)<br>
+                Videos/Streams play with no controls - Live streams don't loop
+            </p>
+        </div>
+    </div>
+    
+    <div class="loading" id="loadingIndicator">
+        Loading...
+    </div>
+    
+    <div class="exit-note hidden" id="exitNote">
+        Press ESC to exit
+    </div>
+    
+    <div class="source-indicator hidden" id="sourceIndicator">
+        <span id="sourceText"></span>
+    </div>
+    
+    <div class="live-indicator hidden" id="liveIndicator">
+        🔴 LIVE
+    </div>
+    
+    <div class="video-info hidden" id="videoInfo">
+        <span id="resolution"></span>
+    </div>
+    
+    <div class="loop-indicator hidden" id="loopIndicator">
+        ↻ seamless loop
+    </div>
+
+    <script>
+        // DOM Elements
+        const videoPlayer = document.getElementById('videoPlayer');
+        const youtubePlayer = document.getElementById('youtubePlayer');
+        const overlay = document.getElementById('overlay');
+        const fileInput = document.getElementById('fileInput');
+        const selectedFileInfo = document.getElementById('selectedFileInfo');
+        const youtubeUrl = document.getElementById('youtubeUrl');
+        const streamUrl = document.getElementById('streamUrl');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const exitNote = document.getElementById('exitNote');
+        const sourceIndicator = document.getElementById('sourceIndicator');
+        const sourceText = document.getElementById('sourceText');
+        const liveIndicator = document.getElementById('liveIndicator');
+        const videoInfo = document.getElementById('videoInfo');
+        const resolution = document.getElementById('resolution');
+        const loopIndicator = document.getElementById('loopIndicator');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        // YouTube API variables
+        let ytPlayer = null;
+        let isYouTubeReady = false;
+        let pendingYouTubeId = null;
+        
+        // Live stream variables
+        let mediaSource = null;
+        let isLiveStream = false;
+        
+        // Loop variables
+        let loopCheckInterval = null;
+        let lastTime = 0;
+        let streamKeepAliveInterval = null;
+        
+        // Load YouTube API
+        function loadYouTubeAPI() {
+            if (window.YT) {
+                isYouTubeReady = true;
+                return;
+            }
+            
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+        
+        // YouTube API ready
+        window.onYouTubeIframeAPIReady = function() {
+            isYouTubeReady = true;
+            if (pendingYouTubeId) {
+                initYouTubePlayer(pendingYouTubeId);
+                pendingYouTubeId = null;
+            }
+        };
+        
+        // Initialize YouTube player with minimal UI
+        function initYouTubePlayer(videoId, isLive = false) {
+            if (!isYouTubeReady) {
+                pendingYouTubeId = videoId;
+                return;
+            }
+            
+            if (ytPlayer) {
+                ytPlayer.destroy();
+            }
+            
+            youtubePlayer.style.display = 'block';
+            videoPlayer.style.display = 'none';
+            
+            isLiveStream = isLive;
+            
+            const playerVars = {
+                'autoplay': 1,
+                'controls': 0,
+                'disablekb': 1,
+                'fs': 0,
+                'iv_load_policy': 3,
+                'modestbranding': 1,
+                'playsinline': 1,
+                'rel': 0,
+                'showinfo': 0,
+                'mute': 0,
+                'cc_load_policy': 0,
+                'color': 'white',
+                'hl': 'en',
+                'enablejsapi': 1,
+                'origin': window.location.origin
+            };
+            
+            // For live streams, don't enable loop
+            if (!isLive) {
+                playerVars.loop = 1;
+                playerVars.playlist = videoId; // Required for loop to work
+            }
+            
+            ytPlayer = new YT.Player('youtubePlayer', {
+                videoId: videoId,
+                playerVars: playerVars,
+                events: {
+                    'onReady': onYouTubeReady,
+                    'onStateChange': onYouTubeStateChange,
+                    'onError': onYouTubeError
+                }
+            });
+        }
+        
+        // YouTube ready
+        function onYouTubeReady(event) {
+            loadingIndicator.classList.remove('show');
+            
+            // Check if it's a live stream
+            const duration = event.target.getDuration();
+            const isLive = (duration === 0); // Live streams have duration 0
+            
+            if (isLive) {
+                isLiveStream = true;
+                liveIndicator.classList.remove('hidden');
+                loopIndicator.classList.add('hidden');
+                
+                // Set up keep-alive for live stream
+                setupLiveStreamKeepAlive();
+            } else {
+                // Set up seamless loop for recorded videos
+                setupYouTubeSeamlessLoop();
+                loopIndicator.classList.remove('hidden');
+            }
+            
+            // Hide all YouTube UI elements by covering them
+            const iframe = youtubePlayer.querySelector('iframe');
+            if (iframe) {
+                iframe.style.pointerEvents = 'none';
+            }
+            
+            // Force fullscreen
+            enterFullscreen();
+            
+            // Update indicators
+            sourceText.textContent = isLive ? 'YouTube Live' : 'YouTube';
+            sourceIndicator.classList.remove('hidden');
+            exitNote.classList.remove('hidden');
+            videoInfo.classList.add('hidden');
+            
+            // Hide overlay
+            overlay.classList.add('hidden');
+        }
+        
+        // YouTube state change
+        function onYouTubeStateChange(event) {
+            // Block all controls
+            if (event.data === YT.PlayerState.PAUSED) {
+                event.target.playVideo();
+            }
+            
+            // Handle ended for recorded videos
+            if (!isLiveStream && event.data === YT.PlayerState.ENDED) {
+                event.target.playVideo();
+            }
+            
+            // For live streams, ensure it keeps playing
+            if (isLiveStream && event.data === YT.PlayerState.PAUSED) {
+                event.target.playVideo();
+            }
+            
+            // If video is buffering, make sure it resumes
+            if (event.data === YT.PlayerState.BUFFERING) {
+                setTimeout(() => {
+                    if (ytPlayer && ytPlayer.getPlayerState() === YT.PlayerState.BUFFERING) {
+                        ytPlayer.playVideo();
+                    }
+                }, 1000);
+            }
+        }
+        
+        // YouTube error
+        function onYouTubeError(event) {
+            loadingIndicator.classList.remove('show');
+            errorMessage.textContent = 'Error loading YouTube video. Please check the URL.';
+            console.error('YouTube error:', event);
+        }
+        
+        // YouTube seamless loop
+        function setupYouTubeSeamlessLoop() {
+            if (loopCheckInterval) {
+                clearInterval(loopCheckInterval);
+            }
+            
+            loopCheckInterval = setInterval(() => {
+                if (!ytPlayer || !document.fullscreenElement || isLiveStream) return;
+                
+                const state = ytPlayer.getPlayerState();
+                const currentTime = ytPlayer.getCurrentTime();
+                const duration = ytPlayer.getDuration();
+                
+                if (state === YT.PlayerState.PAUSED && duration > 0 && currentTime < duration - 0.5) {
+                    ytPlayer.playVideo();
+                }
+                
+                if (state === YT.PlayerState.ENDED || (duration > 0 && currentTime >= duration - 0.1)) {
+                    ytPlayer.seekTo(0, true);
+                    ytPlayer.playVideo();
+                }
+                
+            }, 100);
+        }
+        
+        // Live stream keep-alive
+        function setupLiveStreamKeepAlive() {
+            if (streamKeepAliveInterval) {
+                clearInterval(streamKeepAliveInterval);
+            }
+            
+            streamKeepAliveInterval = setInterval(() => {
+                if (!ytPlayer || !document.fullscreenElement || !isLiveStream) return;
+                
+                const state = ytPlayer.getPlayerState();
+                
+                // If paused, resume
+                if (state === YT.PlayerState.PAUSED) {
+                    ytPlayer.playVideo();
+                }
+                
+                // If ended (shouldn't happen for live), reload
+                if (state === YT.PlayerState.ENDED) {
+                    ytPlayer.playVideo();
+                }
+                
+                // If unstarted, try to play
+                if (state === -1) {
+                    ytPlayer.playVideo();
+                }
+                
+            }, 5000); // Check every 5 seconds
+        }
+        
+        // Load live stream from URL
+        window.loadLiveStream = function() {
+            const url = streamUrl.value.trim();
+            if (!url) {
+                errorMessage.textContent = 'Please enter a stream URL';
+                return;
+            }
+            
+            loadingIndicator.classList.add('show');
+            loadingIndicator.classList.add('live-loading');
+            errorMessage.textContent = '';
+            
+            // Check if it's a YouTube live stream
+            if (url.includes('youtube.com/watch') || url.includes('youtu.be/') || url.includes('youtube.com/live')) {
+                const videoId = extractYouTubeId(url);
+                if (videoId) {
+                    youtubePlayer.style.display = 'block';
+                    videoPlayer.style.display = 'none';
+                    initYouTubePlayer(videoId, true);
+                    return;
+                }
+            }
+            
+            // Check if it's a Twitch stream
+            if (url.includes('twitch.tv/')) {
+                loadTwitchStream(url);
+                return;
+            }
+            
+            // Handle as direct stream URL (HLS, RTMP, etc.)
+            loadDirectStream(url);
+        };
+        
+        // Load Twitch stream
+        function loadTwitchStream(url) {
+            // Extract channel name from URL
+            const match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+            if (!match) {
+                errorMessage.textContent = 'Invalid Twitch URL';
+                loadingIndicator.classList.remove('show');
+                return;
+            }
+            
+            const channel = match[1];
+            
+            // Use Twitch embed with minimal UI
+            youtubePlayer.style.display = 'block';
+            videoPlayer.style.display = 'none';
+            
+            youtubePlayer.innerHTML = `
+                <iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&controls=false&autoplay=true&muted=false" 
+                        frameborder="0" 
+                        allowfullscreen="false" 
+                        scrolling="no"
+                        allow="autoplay; fullscreen"
+                        style="width:100%; height:100%; pointer-events:none;">
+                </iframe>
+            `;
+            
+            isLiveStream = true;
+            liveIndicator.classList.remove('hidden');
+            loopIndicator.classList.add('hidden');
+            sourceText.textContent = `Twitch: ${channel}`;
+            sourceIndicator.classList.remove('hidden');
+            
+            enterFullscreen();
+            
+            // Block iframe interactions
+            setTimeout(() => {
+                loadingIndicator.classList.remove('show');
+                overlay.classList.add('hidden');
+                exitNote.classList.remove('hidden');
+            }, 1000);
+            
+            // Keep alive for Twitch
+            setupLiveStreamKeepAlive();
+        }
+        
+        // Load direct stream (HLS, RTMP, etc.)
+        function loadDirectStream(url) {
+            videoPlayer.style.display = 'block';
+            youtubePlayer.style.display = 'none';
+            
+            // Clear any existing source
+            videoPlayer.src = '';
+            videoPlayer.load();
+            
+            // Set new source
+            videoPlayer.src = url;
+            
+            // Handle HLS streams
+            if (url.includes('.m3u8')) {
+                if (Hls.isSupported()) {
+                    const hls = new Hls();
+                    hls.loadSource(url);
+                    hls.attachMedia(videoPlayer);
+                } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                    videoPlayer.src = url;
+                }
+            }
+            
+            videoPlayer.load();
+            
+            videoPlayer.onloadedmetadata = () => {
+                // Check if it's live (duration = Infinity or very large)
+                const isLive = !isFinite(videoPlayer.duration) || videoPlayer.duration === Infinity;
+                
+                isLiveStream = isLive;
+                
+                if (isLive) {
+                    liveIndicator.classList.remove('hidden');
+                    loopIndicator.classList.add('hidden');
+                    setupLiveStreamKeepAlive();
+                } else {
+                    setupLocalVideoSeamlessLoop();
+                }
+                
+                resolution.textContent = `${videoPlayer.videoWidth}x${videoPlayer.videoHeight}`;
+                sourceText.textContent = 'Direct Stream';
+                sourceIndicator.classList.remove('hidden');
+                
+                enterFullscreen();
+                
+                videoPlayer.play()
+                    .then(() => {
+                        loadingIndicator.classList.remove('show');
+                        overlay.classList.add('hidden');
+                        exitNote.classList.remove('hidden');
+                        if (!isLive) {
+                            videoInfo.classList.remove('hidden');
+                            loopIndicator.classList.remove('hidden');
+                        }
+                    })
+                    .catch(err => {
+                        console.log('Play failed:', err);
+                        setTimeout(() => videoPlayer.play(), 100);
+                    });
+            };
+            
+            videoPlayer.onerror = (err) => {
+                loadingIndicator.classList.remove('show');
+                errorMessage.textContent = 'Error loading stream. Check URL and CORS.';
+                console.error('Stream error:', err);
+            };
+        }
+        
+        // Enter fullscreen
+        function enterFullscreen() {
+            const container = document.getElementById('container');
+            if (container.requestFullscreen) {
+                container.requestFullscreen();
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+            } else if (container.msRequestFullscreen) {
+                container.msRequestFullscreen();
+            }
+        }
+        
+        // Local video seamless loop
+        function setupLocalVideoSeamlessLoop() {
+            if (loopCheckInterval) {
+                clearInterval(loopCheckInterval);
+            }
+            
+            loopCheckInterval = setInterval(() => {
+                if (!videoPlayer.src || !document.fullscreenElement || isLiveStream) return;
+                
+                const currentTime = videoPlayer.currentTime;
+                const duration = videoPlayer.duration;
+                
+                if (duration > 0 && currentTime >= duration - 0.05) {
+                    videoPlayer.currentTime = 0;
+                    if (videoPlayer.paused) {
+                        videoPlayer.play().catch(() => {});
+                    }
+                }
+                
+                if (videoPlayer.paused && !videoPlayer.ended && duration > 0 && currentTime < duration - 0.5) {
+                    videoPlayer.play().catch(() => {});
+                }
+                
+                if (lastTime === currentTime && !videoPlayer.paused && duration > 0 && currentTime < duration - 0.5) {
+                    if (currentTime > 0) {
+                        videoPlayer.currentTime = currentTime - 0.01;
+                        videoPlayer.currentTime = currentTime;
+                    }
+                }
+                
+                lastTime = currentTime;
+                
+            }, 100);
+            
+            videoPlayer.addEventListener('ended', function(e) {
+                e.preventDefault();
+                if (!isLiveStream) {
+                    this.currentTime = 0;
+                    this.play().catch(() => {});
+                }
+            });
+        }
+        
+        // Disable local video interactions
+        function disableVideoInteractions() {
+            videoPlayer.style.pointerEvents = 'none';
+            videoPlayer.removeAttribute('controls');
+            
+            videoPlayer.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            });
+            
+            videoPlayer.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            });
+            
+            videoPlayer.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            });
+            
+            videoPlayer.addEventListener('pause', (e) => {
+                e.preventDefault();
+                if (videoPlayer.src && !videoPlayer.ended && videoPlayer.currentTime < videoPlayer.duration - 0.5) {
+                    videoPlayer.play().catch(() => {});
+                }
+            });
+            
+            videoPlayer.addEventListener('timeupdate', () => {
+                lastTime = videoPlayer.currentTime;
+            });
+        }
+        
+        // Block keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                return true;
+            }
+            
+            const blockedKeys = [
+                ' ', 'Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+                'f', 'F', 'k', 'K', 'm', 'M', 'p', 'P', '[', ']', '<', '>',
+                'Home', 'End', 'PageUp', 'PageDown'
+            ];
+            
+            if (blockedKeys.includes(e.key) || blockedKeys.includes(e.code)) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+            
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        }, true);
+        
+        // Prevent right-click
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+        
+        // Tab switching
+        window.switchTab = function(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'file') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('fileTab').classList.add('active');
+            } else if (tab === 'youtube') {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('youtubeTab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[2].classList.add('active');
+                document.getElementById('liveTab').classList.add('active');
+            }
+            
+            errorMessage.textContent = '';
+            loadingIndicator.classList.remove('show');
+            loadingIndicator.classList.remove('live-loading');
+        };
+        
+        // Fill example URLs
+        window.fillExample = function(type, url) {
+            if (type === 'youtube') {
+                youtubeUrl.value = url;
+            } else {
+                streamUrl.value = url;
+            }
+            errorMessage.textContent = '';
+        };
+        
+        // Load YouTube video
+        window.loadYouTubeVideo = function() {
+            const url = youtubeUrl.value.trim();
+            if (!url) {
+                errorMessage.textContent = 'Please enter a YouTube URL';
+                return;
+            }
+            
+            const videoId = extractYouTubeId(url);
+            if (!videoId) {
+                errorMessage.textContent = 'Invalid YouTube URL';
+                return;
+            }
+            
+            errorMessage.textContent = '';
+            loadingIndicator.classList.add('show');
+            loadingIndicator.classList.remove('live-loading');
+            
+            videoPlayer.style.display = 'none';
+            youtubePlayer.style.display = 'block';
+            isLiveStream = false;
+            
+            initYouTubePlayer(videoId, false);
+        };
+        
+        // Extract YouTube ID from URL
+        function extractYouTubeId(url) {
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/|youtube\.com\/live\/)([^&?#]+)/,
+                /youtube\.com\/watch\?.*[?&]v=([^&?#]+)/,
+                /m\.youtube\.com\/watch\?v=([^&?#]+)/
+            ];
+            
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) return match[1];
+            }
+            
+            return null;
+        }
+        
+        // File input handler
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            
+            if (file) {
+                youtubePlayer.style.display = 'none';
+                videoPlayer.style.display = 'block';
+                isLiveStream = false;
+                
+                selectedFileInfo.textContent = `Selected: ${file.name}`;
+                loadingIndicator.classList.add('show');
+                loadingIndicator.classList.remove('live-loading');
+                errorMessage.textContent = '';
+                
+                const videoUrl = URL.createObjectURL(file);
+                videoPlayer.src = videoUrl;
+                videoPlayer.load();
+                
+                videoPlayer.onloadedmetadata = () => {
+                    resolution.textContent = `${videoPlayer.videoWidth}x${videoPlayer.videoHeight}`;
+                    
+                    overlay.classList.add('hidden');
+                    
+                    sourceText.textContent = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
+                    sourceIndicator.classList.remove('hidden');
+                    exitNote.classList.remove('hidden');
+                    videoInfo.classList.remove('hidden');
+                    loopIndicator.classList.remove('hidden');
+                    liveIndicator.classList.add('hidden');
+                    
+                    enterFullscreen();
+                    setupLocalVideoSeamlessLoop();
+                    disableVideoInteractions();
+                    
+                    setTimeout(() => {
+                        videoPlayer.play()
+                            .then(() => {
+                                loadingIndicator.classList.remove('show');
+                            })
+                            .catch(err => {
+                                console.log('Play failed:', err);
+                                loadingIndicator.classList.remove('show');
+                                setTimeout(() => videoPlayer.play(), 100);
+                            });
+                    }, 500);
+                };
+                
+                videoPlayer.onerror = () => {
+                    loadingIndicator.classList.remove('show');
+                    errorMessage.textContent = 'Error loading video file';
+                };
+            }
+        });
+        
+        // Fullscreen change handler
+        function handleFullscreenChange() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (loopCheckInterval) {
+                    clearInterval(loopCheckInterval);
+                    loopCheckInterval = null;
+                }
+                
+                if (streamKeepAliveInterval) {
+                    clearInterval(streamKeepAliveInterval);
+                    streamKeepAliveInterval = null;
+                }
+                
+                overlay.classList.remove('hidden');
+                exitNote.classList.add('hidden');
+                sourceIndicator.classList.add('hidden');
+                liveIndicator.classList.add('hidden');
+                videoInfo.classList.add('hidden');
+                loopIndicator.classList.add('hidden');
+                
+                videoPlayer.pause();
+                videoPlayer.src = '';
+                videoPlayer.load();
+                videoPlayer.style.display = 'none';
+                
+                if (ytPlayer) {
+                    ytPlayer.destroy();
+                    ytPlayer = null;
+                }
+                
+                // Clear YouTube player container
+                youtubePlayer.innerHTML = '';
+                youtubePlayer.style.display = 'none';
+                
+                fileInput.value = '';
+                selectedFileInfo.textContent = '';
+                youtubeUrl.value = '';
+                streamUrl.value = '';
+                errorMessage.textContent = '';
+                isLiveStream = false;
+                
+                loadingIndicator.classList.remove('show');
+                loadingIndicator.classList.remove('live-loading');
+                
+                URL.revokeObjectURL(videoPlayer.src);
+            }
+        }
+        
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        
+        // Prevent drag and drop
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', (e) => e.preventDefault());
+        
+        // Visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && (document.fullscreenElement || document.webkitFullscreenElement)) {
+                if (videoPlayer.src && videoPlayer.paused) {
+                    videoPlayer.play().catch(() => {});
+                }
+                
+                if (ytPlayer) {
+                    const state = ytPlayer.getPlayerState();
+                    if (state === YT.PlayerState.PAUSED) {
+                        ytPlayer.playVideo();
+                    }
+                }
+            }
+        });
+        
+        // Load HLS.js for HLS support
+        function loadHLSjs() {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+            document.head.appendChild(script);
+        }
+        
+        // Initialize
+        loadYouTubeAPI();
+        loadHLSjs();
+        console.log('Universal Video Player with Live Support ready');
+    </script>
+</body>
+</html>
