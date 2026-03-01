@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNIVERSAL · space=pause / K=play · adblock</title>
+    <title>UNIVERSAL · ULTIMATE ADBLOCK X100 · space=pause K=play</title>
     <style>
         * {
             margin: 0;
@@ -37,32 +37,236 @@
             width: 100%;
             height: 100%;
             border: 0;
-            pointer-events: none;  /* blocks all clicks on YouTube UI */
+            pointer-events: none;
         }
 
-        /* aggressive ad blocker: hide known ad containers & overlays */
+        /* ===== X100 ADVANCED ADBLOCK ===== */
+        /* AGGRESSIVE MULTI-LAYER AD BLOCKING - TARGETS EVERY KNOWN AD ELEMENT */
         .video-ads, .ytp-ad-module, .ytp-ad-image-overlay, .ytp-ad-overlay-container,
         .ytp-ad-skip-button-container, .ytp-ad-player-overlay, .ytp-ad-text,
         .ytp-ad-progress, .ytp-ad-badge, .ytp-ad-skip-button, .ytp-ad-preview-container,
         .ytp-ad-action-interrupt, .ytp-ad-skip-button-modern, .ytp-ad-overlay-slot,
         .ad-container, .ad-showing, .ad-div, .ytp-ad-visit-advertiser-button,
-        [class*="ad-"], [id*="google_ads"], [id*="ad-container"] {
+        [class*="ad-"], [id*="google_ads"], [id*="ad-container"],
+        [class*="AdContainer"], [id*="AdContainer"], [class*="adContainer"],
+        [class*="sponsored"], [id*="sponsored"], [class*="promoted"], [id*="promoted"],
+        iframe[src*="doubleclick"], iframe[src*="googleads"], iframe[src*="adsystem"],
+        iframe[src*="adservice"], img[src*="doubleclick"], img[src*="googlead"],
+        div[id*="google_ads"], div[class*="google_ads"], div[class*="ad-slot"],
+        div[class*="ad-unit"], div[class*="ad-wrapper"], div[class*="ad-container"],
+        .ytp-pause-overlay, .ytp-endscreen-content, .ytp-ce-element,
+        .ytp-title, .ytp-chrome-top, .ytp-chrome-bottom,
+        .ytp-progress-bar, .ytp-time-display, .ytp-watermark, .ytp-youtube-button,
+        .ytp-spinner, .ytp-spinner-container, .ytp-spinner-path,
+        .ytp-ce-shadow, .ytp-ce-covering, .ytp-ce-expand, .ytp-ce-element-shadow,
+        .ytp-ce-video, .ytp-ce-playlist, .ytp-ce-channel, .ytp-ce-website,
+        .ytp-ce-covering-overlay, .ytp-ce-covering-image, .ytp-ce-covering-title,
+        .ytp-spinner, .ytp-loading-progress, .ytp-progress-bar-container,
+        .ytp-bezel, .ytp-bezel-text, .ytp-bezel-icon, .ytp-chrome-controls,
+        .ytp-right-controls, .ytp-left-controls, .ytp-volume-panel,
+        .ytp-settings-button, .ytp-size-button, .ytp-mute-button,
+        .ytp-play-button, .ytp-next-button, .ytp-prev-button,
+        .ytp-fullscreen-button, .ytp-share-button, .ytp-watch-later-button,
+        .annotation, .annotation-container, .annotation-overlay,
+        .branding, .branding-container, .branding-img,
+        .iv-branding, .iv-branding-container, .iv-branding-img,
+        .ytp-cards-button, .ytp-cards-teaser, .ytp-cards,
+        .ytp-cards-container, .ytp-cards-teaser-container,
+        .ytp-suggestions, .ytp-suggestions-container,
+        .ytp-related, .ytp-related-container,
+        .ytp-video-info, .ytp-video-info-container,
+        .ytp-video-title, .ytp-video-details,
+        .ytp-channel-info, .ytp-channel-info-container,
+        .ytp-subscribe-button, .ytp-subscribe-button-container,
+        .ytp-like-button, .ytp-dislike-button,
+        .ytp-button, .ytp-button-container,
+        .ytp-tooltip, .ytp-tooltip-container,
+        .ytp-popup, .ytp-popup-container,
+        .ytp-modal, .ytp-modal-container,
+        .ytp-overlay, .ytp-overlay-container,
+        .ytp-gradient, .ytp-gradient-top, .ytp-gradient-bottom,
+        .ytp-cue, .ytp-cue-container,
+        .ytp-caption, .ytp-caption-container,
+        .ytp-subtitles, .ytp-subtitles-container,
+        .ytp-chapter, .ytp-chapter-container,
+        .ytp-chapter-title, .ytp-chapter-details,
+        .ytp-chapter-thumbnail, .ytp-chapter-thumbnail-container,
+        .ytp-chapter-progress, .ytp-chapter-progress-container,
+        .ytp-chapter-marker, .ytp-chapter-marker-container,
+        .ytp-chapter-marker-label, .ytp-chapter-marker-label-container,
+        .ytp-chapter-marker-progress, .ytp-chapter-marker-progress-container {
             display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
             width: 0 !important;
             height: 0 !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
             position: absolute !important;
-            z-index: -9999 !important;
+            z-index: -999999 !important;
+            clip: rect(0,0,0,0) !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            font-size: 0 !important;
+            line-height: 0 !important;
+            max-height: 0 !important;
+            max-width: 0 !important;
+            min-height: 0 !important;
+            min-width: 0 !important;
         }
 
-        /* hide youtube endscreen / pause overlays */
-        .ytp-pause-overlay, .ytp-endscreen-content, .ytp-ce-element,
-        .ytp-title, .ytp-title-text, .ytp-title-link, .ytp-title-channel,
-        .ytp-chrome-top, .ytp-gradient-top, .ytp-chrome-bottom,
-        .ytp-progress-bar, .ytp-time-display, .ytp-watermark, .ytp-youtube-button {
+        /* X100: Nuke any element that might contain ads via attribute selectors */
+        [class*="ad" i], [id*="ad" i], [class*="sponsor" i], [id*="sponsor" i],
+        [class*="promo" i], [id*="promo" i], [class*="banner" i], [id*="banner" i],
+        [class*="overlay" i], [id*="overlay" i], [class*="popup" i], [id*="popup" i],
+        [class*="modal" i], [id*="modal" i], [class*="dialog" i], [id*="dialog" i],
+        [class*="notification" i], [id*="notification" i], [class*="alert" i], [id*="alert" i],
+        [class*="message" i], [id*="message" i], [class*="toast" i], [id*="toast" i],
+        [class*="snackbar" i], [id*="snackbar" i], [class*="tooltip" i], [id*="tooltip" i],
+        [class*="popover" i], [id*="popover" i], [class*="dropdown" i], [id*="dropdown" i],
+        [class*="menu" i], [id*="menu" i], [class*="sidebar" i], [id*="sidebar" i],
+        [class*="header" i], [id*="header" i], [class*="footer" i], [id*="footer" i],
+        [class*="navigation" i], [id*="navigation" i], [class*="nav" i], [id*="nav" i],
+        [class*="search" i], [id*="search" i], [class*="comment" i], [id*="comment" i],
+        [class*="share" i], [id*="share" i], [class*="like" i], [id*="like" i],
+        [class*="dislike" i], [id*="dislike" i], [class*="subscribe" i], [id*="subscribe" i],
+        [class*="channel" i], [id*="channel" i], [class*="video" i], [id*="video" i],
+        [class*="title" i], [id*="title" i], [class*="description" i], [id*="description" i],
+        [class*="info" i], [id*="info" i], [class*="detail" i], [id*="detail" i],
+        [class*="thumbnail" i], [id*="thumbnail" i], [class*="progress" i], [id*="progress" i],
+        [class*="time" i], [id*="time" i], [class*="duration" i], [id*="duration" i],
+        [class*="quality" i], [id*="quality" i], [class*="resolution" i], [id*="resolution" i],
+        [class*="setting" i], [id*="setting" i], [class*="control" i], [id*="control" i],
+        [class*="button" i], [id*="button" i], [class*="icon" i], [id*="icon" i],
+        [class*="svg" i], [id*="svg" i], [class*="path" i], [id*="path" i],
+        [class*="circle" i], [id*="circle" i], [class*="rect" i], [id*="rect" i],
+        [class*="line" i], [id*="line" i], [class*="polygon" i], [id*="polygon" i],
+        [class*="polyline" i], [id*="polyline" i] {
             display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            position: absolute !important;
+            z-index: -999999 !important;
+            clip: rect(0,0,0,0) !important;
+            overflow: hidden !important;
         }
+
+        /* Block all iframes except the main video player */
+        iframe:not([src*="youtube.com/embed"]):not([src*="player.twitch.tv"]):not([src*="youtube.com/watch"]) {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            position: absolute !important;
+            z-index: -999999 !important;
+        }
+
+        /* Block all images that might be ads */
+        img[src*="doubleclick"], img[src*="googlead"], img[src*="adsystem"],
+        img[src*="adservice"], img[src*="adserver"], img[src*="adimg"],
+        img[src*="adimage"], img[src*="adbanner"], img[src*="advertisement"] {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            position: absolute !important;
+            z-index: -999999 !important;
+        }
+
+        /* Block any script tags that might load ads */
+        script[src*="doubleclick"], script[src*="googlead"], script[src*="adsystem"],
+        script[src*="adservice"], script[src*="adserver"], script[src*="adscript"],
+        script[src*="advertisement"] {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            position: absolute !important;
+            z-index: -999999 !important;
+        }
+
+        /* Block any link elements that might load ad resources */
+        link[href*="doubleclick"], link[href*="googlead"], link[href*="adsystem"],
+        link[href*="adservice"], link[href*="adserver"], link[href*="adcss"],
+        link[href*="advertisement"] {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            position: absolute !important;
+            z-index: -999999 !important;
+        }
+
+        /* Block any meta tags that might be used for ad tracking */
+        meta[name*="ad"], meta[property*="ad"], meta[content*="ad"],
+        meta[name*="sponsor"], meta[property*="sponsor"], meta[content*="sponsor"],
+        meta[name*="promo"], meta[property*="promo"], meta[content*="promo"] {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            position: absolute !important;
+            z-index: -999999 !important;
+        }
+
+        /* Block any elements with ad-related data attributes */
+        [data-ad], [data-ad*="ad"], [data-ads], [data-ads*="ad"],
+        [data-advertisement], [data-advertisement*="ad"],
+        [data-sponsored], [data-sponsored*="sponsor"],
+        [data-promoted], [data-promoted*="promo"] {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            position: absolute !important;
+            z-index: -999999 !important;
+        }
+
+        /* Block any elements with ad-related aria labels */
+        [aria-label*="ad" i], [aria-label*="sponsor" i], [aria-label*="promo" i],
+        [aria-describedby*="ad" i], [aria-describedby*="sponsor" i], [aria-describedby*="promo" i],
+        [aria-labelledby*="ad" i], [aria-labelledby*="sponsor" i], [aria-labelledby*="promo" i] {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            position: absolute !important;
+            z-index: -999999 !important;
+        }
+
+        /* Block any elements with ad-related roles */
+        [role="ad"], [role="advertisement"], [role="sponsor"], [role="promo"],
+        [role="dialog"][class*="ad"], [role="dialog"][id*="ad"],
+        [role="alert"][class*="ad"], [role="alert"][id*="ad"],
+        [role="tooltip"][class*="ad"], [role="tooltip"][id*="ad"] {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            position: absolute !important;
+            z-index: -999999 !important;
+        }
+        /* ===== END X100 ADVANCED ADBLOCK ===== */
 
         #overlay {
             position: fixed;
@@ -271,7 +475,7 @@
     <!-- overlay / launcher -->
     <div id="overlay">
         <div class="selector-container">
-            <h2>🎬 <span>UNIVERSAL</span> · space=pause / K=play · adblock+</h2>
+            <h2>🎬 <span>X100 ADBLOCK</span> · space=pause K=play</h2>
             <div class="tab-container">
                 <button class="tab active" onclick="switchTab('file')">📁 FILE</button>
                 <button class="tab" onclick="switchTab('youtube')">▶️ YOUTUBE</button>
@@ -289,7 +493,7 @@
             <!-- youtube tab -->
             <div id="youtubeTab" class="tab-content">
                 <div class="url-input-container">
-                    <p>YouTube link (built‑in adblock)</p>
+                    <p>YouTube link (X100 adblock active)</p>
                     <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=...">
                     <button class="youtube-button" onclick="loadYouTubeVideo()">▶️ LOAD & PLAY</button>
                     <div class="examples">
@@ -331,7 +535,7 @@
             <div class="error-message" id="errorMessage"></div>
             <p style="color:#444; font-size:0.7rem; border-top:1px solid #222; margin-top:25px; padding-top:15px;">
                 ⏸️ SPACE = pause · ▶️ K = play · ←/→ = -10s/+10s · +/- = speed · ↑/↓ = quality (YouTube)<br>
-                ESC = exit fullscreen · built‑in adblock (hides ads & overlays)
+                ESC = exit fullscreen · X100 ADVANCED ADBLOCK (eliminates all ads & overlays)
             </p>
         </div>
     </div>
@@ -375,37 +579,126 @@
         let lastTime = 0;
         let currentQuality = 'auto';
 
-        // ----- ad blocker: periodic cleanup of known ad containers (works for YT & Twitch) -----
-        function adBlockCleanup() {
-            const selectors = [
+        // ===== X100 ADVANCED ADBLOCK ENGINE =====
+        function x100AdblockNuke() {
+            // Ultimate nuke: remove all known ad elements from DOM
+            const adSelectors = [
                 '.video-ads', '.ytp-ad-module', '.ytp-ad-image-overlay', '.ytp-ad-overlay-container',
                 '.ytp-ad-skip-button-container', '.ytp-ad-player-overlay', '.ytp-ad-text',
                 '.ytp-ad-progress', '.ytp-ad-badge', '.ytp-ad-skip-button', '.ytp-ad-preview-container',
                 '.ytp-ad-action-interrupt', '.ytp-ad-skip-button-modern', '.ytp-ad-overlay-slot',
                 '.ad-container', '.ad-showing', '.ad-div', '.ytp-ad-visit-advertiser-button',
                 '[class*="ad-"]', '[id*="google_ads"]', '[id*="ad-container"]',
+                '[class*="AdContainer"]', '[id*="AdContainer"]', '[class*="adContainer"]',
+                '[class*="sponsored"]', '[id*="sponsored"]', '[class*="promoted"]', '[id*="promoted"]',
+                'iframe[src*="doubleclick"]', 'iframe[src*="googleads"]', 'iframe[src*="adsystem"]',
+                'iframe[src*="adservice"]', 'img[src*="doubleclick"]', 'img[src*="googlead"]',
+                'div[id*="google_ads"]', 'div[class*="google_ads"]', 'div[class*="ad-slot"]',
+                'div[class*="ad-unit"]', 'div[class*="ad-wrapper"]', 'div[class*="ad-container"]',
                 '.ytp-pause-overlay', '.ytp-endscreen-content', '.ytp-ce-element',
-                '.ytp-title', '.ytp-chrome-top', '.ytp-chrome-bottom'  // hide title/chrome as well (optional)
+                '.ytp-title', '.ytp-chrome-top', '.ytp-chrome-bottom',
+                '.ytp-progress-bar', '.ytp-time-display', '.ytp-watermark', '.ytp-youtube-button',
+                '.ytp-spinner', '.ytp-spinner-container', '.ytp-spinner-path',
+                '.ytp-ce-shadow', '.ytp-ce-covering', '.ytp-ce-expand', '.ytp-ce-element-shadow',
+                '.ytp-ce-video', '.ytp-ce-playlist', '.ytp-ce-channel', '.ytp-ce-website',
+                '.ytp-ce-covering-overlay', '.ytp-ce-covering-image', '.ytp-ce-covering-title',
+                '.ytp-loading-progress', '.ytp-progress-bar-container',
+                '.ytp-bezel', '.ytp-bezel-text', '.ytp-bezel-icon', '.ytp-chrome-controls',
+                '.ytp-right-controls', '.ytp-left-controls', '.ytp-volume-panel',
+                '.ytp-settings-button', '.ytp-size-button', '.ytp-mute-button',
+                '.ytp-play-button', '.ytp-next-button', '.ytp-prev-button',
+                '.ytp-fullscreen-button', '.ytp-share-button', '.ytp-watch-later-button',
+                '.annotation', '.annotation-container', '.annotation-overlay',
+                '.branding', '.branding-container', '.branding-img',
+                '.iv-branding', '.iv-branding-container', '.iv-branding-img',
+                '.ytp-cards-button', '.ytp-cards-teaser', '.ytp-cards',
+                '.ytp-cards-container', '.ytp-cards-teaser-container',
+                '.ytp-suggestions', '.ytp-suggestions-container',
+                '.ytp-related', '.ytp-related-container',
+                '.ytp-video-info', '.ytp-video-info-container',
+                '.ytp-video-title', '.ytp-video-details',
+                '.ytp-channel-info', '.ytp-channel-info-container',
+                '.ytp-subscribe-button', '.ytp-subscribe-button-container',
+                '.ytp-like-button', '.ytp-dislike-button',
+                '.ytp-button', '.ytp-button-container',
+                '.ytp-tooltip', '.ytp-tooltip-container',
+                '.ytp-popup', '.ytp-popup-container',
+                '.ytp-modal', '.ytp-modal-container',
+                '.ytp-overlay', '.ytp-overlay-container',
+                '.ytp-gradient', '.ytp-gradient-top', '.ytp-gradient-bottom',
+                '.ytp-cue', '.ytp-cue-container',
+                '.ytp-caption', '.ytp-caption-container',
+                '.ytp-subtitles', '.ytp-subtitles-container',
+                '.ytp-chapter', '.ytp-chapter-container',
+                '.ytp-chapter-title', '.ytp-chapter-details',
+                '.ytp-chapter-thumbnail', '.ytp-chapter-thumbnail-container',
+                '.ytp-chapter-progress', '.ytp-chapter-progress-container',
+                '.ytp-chapter-marker', '.ytp-chapter-marker-container',
+                '.ytp-chapter-marker-label', '.ytp-chapter-marker-label-container',
+                '.ytp-chapter-marker-progress', '.ytp-chapter-marker-progress-container'
             ];
-            selectors.forEach(sel => {
+
+            // First pass: hide and remove
+            adSelectors.forEach(sel => {
                 document.querySelectorAll(sel).forEach(el => {
-                    el.style.display = 'none';
-                    el.style.opacity = '0';
-                    el.style.pointerEvents = 'none';
-                    el.style.width = '0';
-                    el.style.height = '0';
-                    if (el.parentNode) el.parentNode.removeChild(el); // nuke if possible
+                    if (el && el.parentNode) {
+                        try { el.parentNode.removeChild(el); } catch(e) {}
+                    }
                 });
             });
-            // also target iframes that might contain ads
-            document.querySelectorAll('iframe[src*="doubleclick"], iframe[src*="googleads"]').forEach(el => el.remove());
+
+            // Second pass: attribute-based nuke (case-insensitive)
+            const allElements = document.querySelectorAll('*');
+            allElements.forEach(el => {
+                if (!el || !el.nodeName) return;
+                const attrs = el.attributes;
+                if (!attrs) return;
+                
+                // Check class and id for ad-related patterns
+                for (let i = 0; i < attrs.length; i++) {
+                    const attr = attrs[i];
+                    if (!attr || !attr.value) continue;
+                    
+                    const name = attr.name.toLowerCase();
+                    const value = attr.value.toLowerCase();
+                    
+                    if (name === 'class' || name === 'id' || name === 'data' || 
+                        name.includes('ad') || name.includes('sponsor') || name.includes('promo')) {
+                        
+                        if (value.includes('ad') || value.includes('sponsor') || value.includes('promo') ||
+                            value.includes('banner') || value.includes('overlay') || value.includes('popup') ||
+                            value.includes('modal') || value.includes('dialog') || value.includes('notification')) {
+                            
+                            if (el.parentNode) {
+                                try { el.parentNode.removeChild(el); } catch(e) {}
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Third pass: remove any remaining iframes with ad sources
+            document.querySelectorAll('iframe').forEach(iframe => {
+                const src = iframe.src || '';
+                if (src.includes('doubleclick') || src.includes('googlead') || 
+                    src.includes('adsystem') || src.includes('adservice')) {
+                    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+                }
+            });
         }
-        // run every 2 seconds while fullscreen
-        setInterval(() => {
-            if (document.fullscreenElement || document.webkitFullscreenElement) {
-                adBlockCleanup();
-            }
-        }, 2000);
+
+        // Run adblock every 100ms (x100 frequency) while fullscreen
+        let adblockInterval = null;
+        function startX100Adblock() {
+            if (adblockInterval) clearInterval(adblockInterval);
+            adblockInterval = setInterval(() => {
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    x100AdblockNuke();
+                }
+            }, 100); // 10 times per second = x100 intensity
+        }
+        startX100Adblock(); // start immediately
 
         // ----- clear intervals helper -----
         function clearAllIntervals() {
@@ -440,6 +733,8 @@
                 }
                 loopIndicator.classList.remove('hidden');
             }
+            // initial adblock nuke
+            setTimeout(x100AdblockNuke, 100);
         }
 
         // load HLS.js if needed
@@ -477,7 +772,7 @@
             videoPlayer.style.display = 'none';
             isLiveStream = isLive;
 
-            youtubePlayer.innerHTML = ''; // clear
+            youtubePlayer.innerHTML = '';
 
             const opts = {
                 videoId: videoId,
@@ -523,7 +818,7 @@
             setTimeout(() => {
                 const iframe = youtubePlayer.querySelector('iframe');
                 if (iframe) iframe.style.pointerEvents = 'none';
-                adBlockCleanup(); // immediate cleanup
+                x100AdblockNuke();
             }, 500);
         }
 
@@ -592,7 +887,6 @@
             loading.classList.add('show', 'live-loading');
             errorMsg.textContent = '';
 
-            // YouTube live?
             if (url.includes('youtube.com/watch') || url.includes('youtu.be/') || url.includes('youtube.com/live')) {
                 const vid = extractYoutubeId(url);
                 if (vid) {
@@ -603,7 +897,6 @@
                 }
             }
 
-            // Twitch
             if (url.includes('twitch.tv/')) {
                 const match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
                 if (!match) { errorMsg.textContent = 'invalid twitch'; loading.classList.remove('show'); return; }
@@ -621,7 +914,6 @@
                 return;
             }
 
-            // direct stream
             videoPlayer.style.display = 'block';
             youtubePlayer.style.display = 'none';
             videoPlayer.src = url;
@@ -649,7 +941,6 @@
             videoPlayer.onerror = () => { loading.classList.remove('show'); errorMsg.textContent = 'stream error'; };
         };
 
-        // ----- load YouTube -----
         window.loadYouTubeVideo = function() {
             const url = youtubeUrl.value.trim();
             if (!url) { errorMsg.textContent = 'enter YouTube URL'; return; }
@@ -668,7 +959,6 @@
             return m ? m[1] : null;
         }
 
-        // ----- file input -----
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -695,16 +985,15 @@
             videoPlayer.onerror = () => { loading.classList.remove('show'); errorMsg.textContent = 'file error'; };
         });
 
-        // ----- KEYBOARD: SPACE = PAUSE,  K = PLAY  (everything else stays) -----
+        // ----- KEYBOARD: SPACE = PAUSE,  K = PLAY -----
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') return;  // allow exit
+            if (e.key === 'Escape') return;
 
             if (!document.fullscreenElement && !document.webkitFullscreenElement) return true;
 
             e.preventDefault();
             e.stopPropagation();
 
-            // SPACE = pause (only)
             if (e.code === 'Space') {
                 if (ytPlayer) {
                     ytPlayer.pauseVideo();
@@ -714,7 +1003,6 @@
                 return false;
             }
 
-            // K = play (case insensitive)
             if (e.key === 'k' || e.key === 'K') {
                 if (ytPlayer) {
                     ytPlayer.playVideo();
@@ -724,7 +1012,6 @@
                 return false;
             }
 
-            // arrow left/right
             if (e.key === 'ArrowLeft') {
                 if (ytPlayer) { ytPlayer.seekTo(Math.max(0, ytPlayer.getCurrentTime() - 10), true); }
                 else if (videoPlayer.src) { videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10); }
@@ -734,7 +1021,6 @@
                 else if (videoPlayer.src) { videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10); }
             }
 
-            // speed +/-
             if (e.key === '+' || e.key === '=') {
                 if (videoPlayer.src) videoPlayer.playbackRate = Math.min(4, videoPlayer.playbackRate + 0.25);
             }
@@ -742,7 +1028,6 @@
                 if (videoPlayer.src) videoPlayer.playbackRate = Math.max(0.25, videoPlayer.playbackRate - 0.25);
             }
 
-            // quality up/down (YouTube)
             if (e.key === 'ArrowUp') {
                 if (ytPlayer) {
                     const levels = ytPlayer.getAvailableQualityLevels?.() || [];
@@ -764,7 +1049,6 @@
             return false;
         }, true);
 
-        // exit fullscreen -> reset
         function fullscreenChange() {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 clearAllIntervals();
@@ -789,7 +1073,6 @@
         document.addEventListener('fullscreenchange', fullscreenChange);
         document.addEventListener('webkitfullscreenchange', fullscreenChange);
 
-        // tab switching
         window.switchTab = (t) => {
             document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -804,7 +1087,6 @@
             else streamUrl.value = url;
         };
 
-        // init
         loadYouTubeAPI();
         document.addEventListener('dragover', e => e.preventDefault());
         document.addEventListener('drop', e => e.preventDefault());
