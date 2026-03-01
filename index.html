@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNIVERSAL · pause & play · live + vod</title>
+    <title>UNIVERSAL · space=pause / K=play · adblock</title>
     <style>
         * {
             margin: 0;
@@ -40,12 +40,27 @@
             pointer-events: none;  /* blocks all clicks on YouTube UI */
         }
 
-        /* hide every possible youtube overlay */
+        /* aggressive ad blocker: hide known ad containers & overlays */
+        .video-ads, .ytp-ad-module, .ytp-ad-image-overlay, .ytp-ad-overlay-container,
+        .ytp-ad-skip-button-container, .ytp-ad-player-overlay, .ytp-ad-text,
+        .ytp-ad-progress, .ytp-ad-badge, .ytp-ad-skip-button, .ytp-ad-preview-container,
+        .ytp-ad-action-interrupt, .ytp-ad-skip-button-modern, .ytp-ad-overlay-slot,
+        .ad-container, .ad-showing, .ad-div, .ytp-ad-visit-advertiser-button,
+        [class*="ad-"], [id*="google_ads"], [id*="ad-container"] {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            position: absolute !important;
+            z-index: -9999 !important;
+        }
+
+        /* hide youtube endscreen / pause overlays */
+        .ytp-pause-overlay, .ytp-endscreen-content, .ytp-ce-element,
         .ytp-title, .ytp-title-text, .ytp-title-link, .ytp-title-channel,
-        .ytp-chrome-top, .ytp-gradient-top, .ytp-ce-element, .ytp-pause-overlay,
-        .ytp-endscreen-content, .ytp-share-panel, .ytp-overflow-panel,
-        .ytp-spinner, .ytp-watermark, .ytp-youtube-button,
-        .ytp-chrome-bottom, .ytp-progress-bar, .ytp-time-display {
+        .ytp-chrome-top, .ytp-gradient-top, .ytp-chrome-bottom,
+        .ytp-progress-bar, .ytp-time-display, .ytp-watermark, .ytp-youtube-button {
             display: none !important;
         }
 
@@ -256,7 +271,7 @@
     <!-- overlay / launcher -->
     <div id="overlay">
         <div class="selector-container">
-            <h2>🎬 <span>UNIVERSAL</span> · pause & play</h2>
+            <h2>🎬 <span>UNIVERSAL</span> · space=pause / K=play · adblock+</h2>
             <div class="tab-container">
                 <button class="tab active" onclick="switchTab('file')">📁 FILE</button>
                 <button class="tab" onclick="switchTab('youtube')">▶️ YOUTUBE</button>
@@ -274,7 +289,7 @@
             <!-- youtube tab -->
             <div id="youtubeTab" class="tab-content">
                 <div class="url-input-container">
-                    <p>YouTube link (recorded or live)</p>
+                    <p>YouTube link (built‑in adblock)</p>
                     <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=...">
                     <button class="youtube-button" onclick="loadYouTubeVideo()">▶️ LOAD & PLAY</button>
                     <div class="examples">
@@ -315,8 +330,8 @@
 
             <div class="error-message" id="errorMessage"></div>
             <p style="color:#444; font-size:0.7rem; border-top:1px solid #222; margin-top:25px; padding-top:15px;">
-                ⏯️ SPACE = pause/play · ←/→ = -10s / +10s · +/- = speed · ↑/↓ = quality (YouTube)<br>
-                ESC = exit fullscreen (stop everything)
+                ⏸️ SPACE = pause · ▶️ K = play · ←/→ = -10s/+10s · +/- = speed · ↑/↓ = quality (YouTube)<br>
+                ESC = exit fullscreen · built‑in adblock (hides ads & overlays)
             </p>
         </div>
     </div>
@@ -328,7 +343,7 @@
     <div class="live-indicator hidden" id="liveIndicator">🔴 LIVE</div>
     <div class="video-info hidden" id="videoInfo"><span id="resolution"></span></div>
     <div class="loop-indicator hidden" id="loopIndicator">↻ seamless loop</div>
-    <div class="control-hint hidden" id="controlHint">␣ pause/play  ←/→ skip  +/– speed</div>
+    <div class="control-hint hidden" id="controlHint">space=pause  K=play  ←/→ skip  +/– speed</div>
 
     <script>
         // ----- DOM elements -----
@@ -360,7 +375,39 @@
         let lastTime = 0;
         let currentQuality = 'auto';
 
-        // ----- helpers -----
+        // ----- ad blocker: periodic cleanup of known ad containers (works for YT & Twitch) -----
+        function adBlockCleanup() {
+            const selectors = [
+                '.video-ads', '.ytp-ad-module', '.ytp-ad-image-overlay', '.ytp-ad-overlay-container',
+                '.ytp-ad-skip-button-container', '.ytp-ad-player-overlay', '.ytp-ad-text',
+                '.ytp-ad-progress', '.ytp-ad-badge', '.ytp-ad-skip-button', '.ytp-ad-preview-container',
+                '.ytp-ad-action-interrupt', '.ytp-ad-skip-button-modern', '.ytp-ad-overlay-slot',
+                '.ad-container', '.ad-showing', '.ad-div', '.ytp-ad-visit-advertiser-button',
+                '[class*="ad-"]', '[id*="google_ads"]', '[id*="ad-container"]',
+                '.ytp-pause-overlay', '.ytp-endscreen-content', '.ytp-ce-element',
+                '.ytp-title', '.ytp-chrome-top', '.ytp-chrome-bottom'  // hide title/chrome as well (optional)
+            ];
+            selectors.forEach(sel => {
+                document.querySelectorAll(sel).forEach(el => {
+                    el.style.display = 'none';
+                    el.style.opacity = '0';
+                    el.style.pointerEvents = 'none';
+                    el.style.width = '0';
+                    el.style.height = '0';
+                    if (el.parentNode) el.parentNode.removeChild(el); // nuke if possible
+                });
+            });
+            // also target iframes that might contain ads
+            document.querySelectorAll('iframe[src*="doubleclick"], iframe[src*="googleads"]').forEach(el => el.remove());
+        }
+        // run every 2 seconds while fullscreen
+        setInterval(() => {
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                adBlockCleanup();
+            }
+        }, 2000);
+
+        // ----- clear intervals helper -----
         function clearAllIntervals() {
             if (loopInterval) clearInterval(loopInterval);
             if (keepAliveInterval) clearInterval(keepAliveInterval);
@@ -430,8 +477,7 @@
             videoPlayer.style.display = 'none';
             isLiveStream = isLive;
 
-            // remove any leftover iframe styling
-            youtubePlayer.innerHTML = '';
+            youtubePlayer.innerHTML = ''; // clear
 
             const opts = {
                 videoId: videoId,
@@ -459,7 +505,7 @@
         function onYouTubeReady(event) {
             loading.classList.remove('show');
             const duration = event.target.getDuration();
-            const liveDetected = (duration === 0);   // live streams have duration 0
+            const liveDetected = (duration === 0);
             isLiveStream = liveDetected;
 
             if (isLiveStream) {
@@ -474,27 +520,17 @@
             enterFullscreen();
             hideOverlayAndShowIndicators(isLiveStream ? 'YouTube Live' : 'YouTube', isLiveStream);
 
-            // block iframe clicks completely
             setTimeout(() => {
                 const iframe = youtubePlayer.querySelector('iframe');
                 if (iframe) iframe.style.pointerEvents = 'none';
+                adBlockCleanup(); // immediate cleanup
             }, 500);
         }
 
         function onYouTubeStateChange(e) {
-            // force pause prevention: if paused → resume (unless user explicitly wants pause? but requirement: "i can pause and play" => we ALLOW pause with SPACE)
-            // we want space to toggle, but other attempts (click) are blocked. space is handled via keydown.
-            // However we must NOT auto-resume if user pressed SPACE. So we need to know if pause was triggered by space.
-            // We'll handle space manually. For external pause attempts (like clicking on iframe) we block via pointer-events: none, so they can't.
-            // but YT might pause due to buffering/error: we only resume if it's not a user pause command.
-            // we'll implement cooperative pause: space calls pause/play. Do not auto-resume here unless it's ended state.
             if (e.data === YT.PlayerState.ENDED && !isLiveStream) {
                 ytPlayer.seekTo(0);
                 ytPlayer.playVideo();
-            }
-            // live paused? keep alive will fix it after 5 sec, but we can also resume gently
-            if (isLiveStream && e.data === YT.PlayerState.PAUSED) {
-                // do nothing immediately, keep alive will resume.
             }
         }
 
@@ -505,9 +541,6 @@
                 const state = ytPlayer.getPlayerState();
                 const t = ytPlayer.getCurrentTime();
                 const d = ytPlayer.getDuration();
-                if (state === YT.PlayerState.PAUSED && d > 0 && t < d - 0.5) {
-                    // do NOT resume – we allow pause via space. so we only loop at end.
-                }
                 if (state === YT.PlayerState.ENDED || (d > 0 && t >= d - 0.1)) {
                     ytPlayer.seekTo(0);
                     ytPlayer.playVideo();
@@ -526,7 +559,7 @@
             }, 4000);
         }
 
-        // ----- local video seamless loop (non-live) -----
+        // ----- local video seamless loop -----
         function setupLocalSeamlessLoop() {
             clearAllIntervals();
             loopInterval = setInterval(() => {
@@ -546,16 +579,10 @@
             }, { once: false });
         }
 
-        // disable native controls / interactions
         function disableVideoInteractions() {
             videoPlayer.style.pointerEvents = 'none';
             videoPlayer.removeAttribute('controls');
             videoPlayer.addEventListener('contextmenu', e => e.preventDefault());
-            videoPlayer.addEventListener('pause', (e) => {
-                // if user pause via space we want to keep paused, not resume.
-                // but if it's paused due to buffering etc, we may resume? but safer: do nothing.
-                // space handler will manage.
-            });
         }
 
         // ----- load live stream -----
@@ -590,11 +617,11 @@
                 hideOverlayAndShowIndicators(`Twitch: ${channel}`, true);
                 enterFullscreen();
                 loading.classList.remove('show');
-                setupLiveKeepAlive(); // generic keep-alive
+                setupLiveKeepAlive();
                 return;
             }
 
-            // direct stream (HLS, etc)
+            // direct stream
             videoPlayer.style.display = 'block';
             youtubePlayer.style.display = 'none';
             videoPlayer.src = url;
@@ -622,7 +649,7 @@
             videoPlayer.onerror = () => { loading.classList.remove('show'); errorMsg.textContent = 'stream error'; };
         };
 
-        // ----- load YouTube (non-live explicit) -----
+        // ----- load YouTube -----
         window.loadYouTubeVideo = function() {
             const url = youtubeUrl.value.trim();
             if (!url) { errorMsg.textContent = 'enter YouTube URL'; return; }
@@ -633,7 +660,7 @@
             errorMsg.textContent = '';
             videoPlayer.style.display = 'none';
             youtubePlayer.style.display = 'block';
-            initYouTubePlayer(id, false);  // will detect live later
+            initYouTubePlayer(id, false);
         };
 
         function extractYoutubeId(url) {
@@ -668,7 +695,7 @@
             videoPlayer.onerror = () => { loading.classList.remove('show'); errorMsg.textContent = 'file error'; };
         });
 
-        // ----- keyboard commands: PAUSE/PLAY enabled -----
+        // ----- KEYBOARD: SPACE = PAUSE,  K = PLAY  (everything else stays) -----
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') return;  // allow exit
 
@@ -677,17 +704,22 @@
             e.preventDefault();
             e.stopPropagation();
 
-            // SPACE: pause/play (core requirement)
+            // SPACE = pause (only)
             if (e.code === 'Space') {
                 if (ytPlayer) {
-                    const state = ytPlayer.getPlayerState();
-                    if (state === YT.PlayerState.PLAYING) {
-                        ytPlayer.pauseVideo();
-                    } else {
-                        ytPlayer.playVideo();
-                    }
+                    ytPlayer.pauseVideo();
                 } else if (videoPlayer.src) {
-                    if (videoPlayer.paused) videoPlayer.play(); else videoPlayer.pause();
+                    videoPlayer.pause();
+                }
+                return false;
+            }
+
+            // K = play (case insensitive)
+            if (e.key === 'k' || e.key === 'K') {
+                if (ytPlayer) {
+                    ytPlayer.playVideo();
+                } else if (videoPlayer.src) {
+                    videoPlayer.play();
                 }
                 return false;
             }
@@ -702,7 +734,7 @@
                 else if (videoPlayer.src) { videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 10); }
             }
 
-            // speed +/- (only local video)
+            // speed +/-
             if (e.key === '+' || e.key === '=') {
                 if (videoPlayer.src) videoPlayer.playbackRate = Math.min(4, videoPlayer.playbackRate + 0.25);
             }
@@ -710,7 +742,7 @@
                 if (videoPlayer.src) videoPlayer.playbackRate = Math.max(0.25, videoPlayer.playbackRate - 0.25);
             }
 
-            // quality up/down for YouTube (mock)
+            // quality up/down (YouTube)
             if (e.key === 'ArrowUp') {
                 if (ytPlayer) {
                     const levels = ytPlayer.getAvailableQualityLevels?.() || [];
