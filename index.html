@@ -3,1314 +3,933 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal Video Player - Live Stream Support</title>
+    <title>🎬 cut & play · clean embed + keyboard</title>
     <style>
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
         }
-        
         body {
-            background: black;
-            overflow: hidden;
-            font-family: 'Segoe UI', Arial, sans-serif;
-        }
-        
-        #container {
-            width: 100vw;
-            height: 100vh;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(145deg, #0b0f18 0%, #1a1f2c 100%);
             display: flex;
-            justify-content: center;
             align-items: center;
-            background: black;
-            position: relative;
+            justify-content: center;
+            padding: 12px;
+        }
+        .card {
+            background: rgba(18, 22, 33, 0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 2rem;
+            padding: 1.8rem;
+            box-shadow: 0 25px 40px -10px rgba(0,0,0,0.7);
+            width: 1000px;
+            max-width: 98vw;
+        }
+        h1 {
+            color: #f3e9c0;
+            font-size: 2rem;
+            margin: 0 0 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        h1 span {
+            background: #9f7e1f;
+            font-size: 0.9rem;
+            padding: 0.15rem 1rem;
+            border-radius: 40px;
+            color: #0e0b1a;
+        }
+        .sub {
+            color: #aca9bb;
+            margin-bottom: 1.5rem;
+            border-left: 3px solid #f5c542;
+            padding-left: 1rem;
         }
         
-        #videoPlayer {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: black;
+        /* Preview row – both containers have clean embed (no title/controls) */
+        .preview-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 1.5rem;
         }
-        
-        #youtubePlayer {
-            width: 100%;
-            height: 100%;
-            background: black;
-            position: relative;
+        .preview-container {
+            flex: 1;
+            background: #0c0f16;
+            border-radius: 1.5rem;
             overflow: hidden;
+            border: 2px solid #3f3d52;
+            aspect-ratio: 9 / 16;
+            position: relative;
         }
-        
-        /* Hide YouTube elements */
-        #youtubePlayer iframe {
-            pointer-events: none;
+        /* video elements: no controls, hide any title/branding (none exists natively) */
+        #preview, #playbackPreview {
             width: 100%;
             height: 100%;
-            border: 0;
+            object-fit: cover;
+            background: #171b24;
+            display: block;
+            pointer-events: none;  /* keeps overlay clean – but we need play/pause via keyboard */
         }
-        
-        /* Additional overlay to block any YouTube UI */
-        #youtubePlayer::after {
-            content: '';
+        /* allow pointer events only on container if needed, but video itself no overlay */
+        .preview-container {
+            pointer-events: none;   /* so clicks don't trigger video controls (they are hidden anyway) */
+        }
+        /* but we still want keyboard to work – fine */
+        .preview-label {
+            position: absolute;
+            bottom: 8px;
+            right: 16px;
+            background: #00000080;
+            color: #ffd966;
+            padding: 4px 12px;
+            border-radius: 30px;
+            backdrop-filter: blur(2px);
+            border: 1px solid #b58f3a;
+            z-index: 5;
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+        .countdown-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: transparent;
-            pointer-events: none;
-            z-index: 10;
-        }
-        
-        #overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
             display: flex;
-            justify-content: center;
             align-items: center;
-            background: rgba(0, 0, 0, 0.95);
-            color: white;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
-            overflow-y: auto;
-            padding: 20px;
-        }
-        
-        .selector-container {
-            background: #1a1a1a;
-            padding: 40px;
-            border-radius: 30px;
-            text-align: center;
-            max-width: 700px;
-            width: 100%;
-            border: 2px solid #333;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.7);
-        }
-        
-        .selector-container h2 {
-            margin-bottom: 30px;
-            color: #fff;
-            font-size: 32px;
-            font-weight: 300;
-        }
-        
-        .selector-container h2 span {
-            color: #4CAF50;
-            font-weight: 600;
-        }
-        
-        .tab-container {
-            display: flex;
             justify-content: center;
+            background: rgba(0,0,0,0.4);
+            color: white;
+            font-size: 7rem;
+            font-weight: 900;
+            z-index: 20;
+            opacity: 0;
+            transition: opacity 0.2s;
+            border-radius: 1.5rem;
+            pointer-events: none;
+        }
+        .countdown-overlay.visible {
+            opacity: 1;
+        }
+        
+        /* Timeline editor */
+        .timeline-section {
+            background: #1a1e2b;
+            border-radius: 2rem;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border: 1px solid #4a4553;
+        }
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            color: #e2d5b6;
+            margin-bottom: 1rem;
+        }
+        .cut-badge {
+            background: #c44545;
+            color: white;
+            padding: 0.2rem 1rem;
+            border-radius: 30px;
+        }
+        
+        /* Timeline track */
+        .timeline-track {
+            position: relative;
+            height: 60px;
+            background: #0f1322;
+            border-radius: 40px;
+            border: 1px solid #5f5a6b;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+        .timeline-fill {
+            position: absolute;
+            height: 100%;
+            background: #f5c54233;
+            border-radius: 40px;
+            pointer-events: none;
+        }
+        .timeline-handle {
+            position: absolute;
+            width: 16px;
+            height: 70px;
+            top: -5px;
+            transform: translateX(-50%);
+            cursor: ew-resize;
+            z-index: 30;
+        }
+        .handle-line {
+            width: 4px;
+            height: 70px;
+            background: #f5c542;
+            margin: 0 auto;
+            border-radius: 4px;
+        }
+        .handle-circle {
+            width: 24px;
+            height: 24px;
+            background: white;
+            border: 3px solid #f5c542;
+            border-radius: 50%;
+            margin: -12px auto 0;
+        }
+        .start-handle .handle-circle {
+            background: #4ae07a;
+            border-color: #2ecc71;
+        }
+        .end-handle .handle-circle {
+            background: #e06a4a;
+            border-color: #e74c3c;
+        }
+        
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            color: #9f9bb5;
+            margin-bottom: 0.5rem;
+        }
+        .cut-values {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            color: #cfc7ae;
+        }
+        .cut-values span {
+            background: #2b3040;
+            padding: 0.3rem 1.5rem;
+            border-radius: 40px;
+        }
+        
+        /* Playback controls (buttons + keyboard hints) */
+        .playback-controls {
+            display: flex;
             gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
+            justify-content: center;
+            margin: 15px 0;
             flex-wrap: wrap;
         }
-        
-        .tab {
-            padding: 12px 25px;
-            background: transparent;
+        .playback-btn {
+            background: #323a4b;
             border: none;
-            color: #888;
-            font-size: 16px;
+            color: white;
+            padding: 0.5rem 2rem;
+            border-radius: 30px;
             cursor: pointer;
-            border-radius: 50px;
-            transition: all 0.3s;
-            font-weight: 500;
+            font-size: 1rem;
+        }
+        .playback-btn:hover {
+            background: #3f485e;
+        }
+        .key-hint {
+            background: #1f2533;
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            color: #f5c542;
+            font-size: 0.9rem;
+            margin-left: 8px;
         }
         
-        .tab.active {
-            background: #4CAF50;
-            color: white;
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            margin: 1.2rem 0;
         }
-        
-        .tab.live-tab {
-            border: 1px solid #ff4444;
-            color: #ff4444;
-        }
-        
-        .tab.live-tab.active {
-            background: #ff4444;
-            color: white;
-            border-color: #ff4444;
-        }
-        
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .file-input-label {
-            display: inline-block;
-            padding: 18px 50px;
-            background: #4CAF50;
-            color: white;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: 600;
-            transition: all 0.3s;
+        button {
+            background: #272b3a;
             border: none;
-            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.4);
-            margin: 20px 0;
-        }
-        
-        .file-input-label:hover {
-            background: #45a049;
-            transform: scale(1.05);
-            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.5);
-        }
-        
-        .file-input-label:active {
-            transform: scale(0.95);
-        }
-        
-        #fileInput {
-            display: none;
-        }
-        
-        #selectedFileInfo {
-            margin-top: 20px;
-            color: #4CAF50;
-            font-size: 14px;
-            min-height: 20px;
-        }
-        
-        .url-input-container {
-            padding: 20px 0;
-        }
-        
-        .url-input-container p {
-            color: #888;
-            margin-bottom: 20px;
-        }
-        
-        .live-badge {
-            display: inline-block;
-            background: #ff4444;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 50px;
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.8; }
-            50% { opacity: 1; box-shadow: 0 0 20px #ff4444; }
-            100% { opacity: 0.8; }
-        }
-        
-        #streamUrl {
-            width: 100%;
-            padding: 18px 20px;
-            background: #2a2a2a;
-            border: 2px solid #3a3a3a;
-            border-radius: 50px;
-            color: white;
-            font-size: 16px;
-            margin-bottom: 20px;
-            transition: all 0.3s;
-        }
-        
-        #streamUrl:focus {
-            outline: none;
-            border-color: #ff4444;
-            background: #2a2a2a;
-        }
-        
-        #streamUrl::placeholder {
-            color: #666;
-        }
-        
-        .stream-button {
-            padding: 18px 50px;
-            background: #ff4444;
-            color: white;
-            border: none;
-            border-radius: 50px;
+            color: #e9e1c7;
+            font-size: 1.1rem;
+            padding: 0.8rem 1.8rem;
+            border-radius: 2.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
             cursor: pointer;
-            font-size: 18px;
-            font-weight: 600;
-            transition: all 0.3s;
-            box-shadow: 0 5px 20px rgba(255, 68, 68, 0.4);
+            box-shadow: 0 6px 0 #0d0f17;
+            border: 1px solid #5b5340;
+            flex: 1;
+            justify-content: center;
         }
-        
-        .stream-button:hover {
-            background: #cc3333;
-            transform: scale(1.05);
-            box-shadow: 0 8px 25px rgba(255, 68, 68, 0.5);
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #0d0f17;
         }
-        
-        .stream-button:active {
-            transform: scale(0.95);
+        button:disabled {
+            opacity: 0.4;
+            transform: translateY(2px);
+            pointer-events: none;
         }
-        
-        #youtubeUrl {
-            width: 100%;
-            padding: 18px 20px;
-            background: #2a2a2a;
-            border: 2px solid #3a3a3a;
-            border-radius: 50px;
+        .record-btn {
+            background: #8b2a2a;
+            border-color: #c97c4b;
             color: white;
-            font-size: 16px;
-            margin-bottom: 20px;
-            transition: all 0.3s;
+        }
+        .download-btn {
+            background: #2d5a3b;
+            border-color: #64b07b;
         }
         
-        #youtubeUrl:focus {
-            outline: none;
-            border-color: #4CAF50;
-            background: #2a2a2a;
+        .info-row {
+            background: #1b1f2b;
+            border-radius: 3rem;
+            padding: 0.7rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            color: #cbc5b2;
+            border: 1px solid #47423b;
         }
-        
-        #youtubeUrl::placeholder {
-            color: #666;
+        .badge {
+            background: #323a4b;
+            padding: 0.35rem 1rem;
+            border-radius: 3rem;
+            color: #ffdb8e;
         }
-        
-        .youtube-button {
-            padding: 18px 50px;
-            background: #FF0000;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: 600;
-            transition: all 0.3s;
-            box-shadow: 0 5px 20px rgba(255, 0, 0, 0.4);
-        }
-        
-        .youtube-button:hover {
-            background: #cc0000;
-            transform: scale(1.05);
-            box-shadow: 0 8px 25px rgba(255, 0, 0, 0.5);
-        }
-        
-        .examples {
-            margin-top: 30px;
-            padding: 20px;
-            background: #222;
-            border-radius: 20px;
-            text-align: left;
-        }
-        
-        .examples p {
-            color: #888;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        
-        .examples ul {
-            list-style: none;
-            color: #4CAF50;
-            font-size: 12px;
-        }
-        
-        .examples li {
-            margin: 5px 0;
-            padding: 8px 12px;
-            background: #2a2a2a;
+        .progress {
+            height: 6px;
+            background: #2a2e3c;
             border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .examples li:hover {
-            background: #333;
-            color: #ff4444;
-        }
-        
-        .examples.live-examples li {
-            color: #ff8888;
-        }
-        
-        .examples.live-examples li:hover {
-            background: #333;
-            color: #ff4444;
-        }
-        
-        .hidden {
-            display: none !important;
-        }
-        
-        .video-info {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            color: rgba(255, 255, 255, 0.2);
-            font-size: 11px;
-            z-index: 100;
-            pointer-events: none;
-            background: rgba(0,0,0,0.5);
-            padding: 5px 15px;
-            border-radius: 50px;
-        }
-        
-        .loading {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 18px;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 25px 40px;
-            border-radius: 60px;
-            z-index: 2000;
-            display: none;
-            border: 2px solid #4CAF50;
-            box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
-        }
-        
-        .loading.live-loading {
-            border-color: #ff4444;
-            box-shadow: 0 0 30px rgba(255, 68, 68, 0.3);
-        }
-        
-        .loading.show {
-            display: block;
-            animation: pulse 1.5s infinite;
-        }
-        
-        .exit-note {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 12px;
-            z-index: 100;
-            pointer-events: none;
-            background: rgba(0,0,0,0.5);
-            padding: 5px 15px;
-            border-radius: 50px;
-        }
-        
-        .live-indicator {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            color: white;
-            font-size: 12px;
-            z-index: 100;
-            pointer-events: none;
-            background: #ff4444;
-            padding: 5px 15px;
-            border-radius: 50px;
-            animation: pulse 2s infinite;
-            font-weight: bold;
-        }
-        
-        .loop-indicator {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            color: rgba(255, 255, 255, 0.2);
-            font-size: 11px;
-            z-index: 100;
-            pointer-events: none;
-            background: rgba(0,0,0,0.5);
-            padding: 5px 15px;
-            border-radius: 50px;
-        }
-        
-        .source-indicator {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 12px;
-            z-index: 100;
-            pointer-events: none;
-            background: rgba(0,0,0,0.5);
-            padding: 5px 15px;
-            border-radius: 50px;
-            max-width: 300px;
+            margin: 10px 0;
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            display: none;
         }
-        
-        .error-message {
-            color: #ff4444;
-            margin-top: 15px;
-            font-size: 14px;
-            min-height: 20px;
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #f5c542;
+            transition: width 0.2s;
         }
-        
-        .stream-info {
-            background: #2a2a2a;
-            border-radius: 15px;
-            padding: 15px;
-            margin: 20px 0;
-            text-align: left;
-            border-left: 4px solid #ff4444;
+        .legend {
+            margin-top: 0.8rem;
+            text-align: center;
+            color: #8f8ba3;
+            font-size: 0.8rem;
         }
-        
-        .stream-info h4 {
-            color: #ff4444;
-            margin-bottom: 10px;
-        }
-        
-        .stream-info p {
-            color: #aaa;
-            font-size: 13px;
-            margin: 5px 0;
-        }
-        
-        .stream-info code {
-            background: #1a1a1a;
-            padding: 3px 8px;
-            border-radius: 5px;
-            color: #ff8888;
-            font-size: 12px;
+        .legend kbd {
+            background: #2a2e3f;
+            padding: 0.1rem 0.6rem;
+            border-radius: 6px;
+            color: #f5c542;
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <video id="videoPlayer" playsinline style="display: none;"></video>
-        <div id="youtubePlayer" style="display: none;"></div>
-    </div>
-    
-    <div id="overlay">
-        <div class="selector-container">
-            <h2>🎬 <span>Universal</span> Video Player</h2>
-            
-            <div class="tab-container">
-                <button class="tab active" onclick="switchTab('file')">📁 Local File</button>
-                <button class="tab" onclick="switchTab('youtube')">▶️ YouTube</button>
-                <button class="tab live-tab" onclick="switchTab('live')">🔴 LIVE Streams</button>
+    <div class="card">
+        <h1>🎬 clean cuts <span>keyboard + hide titles</span></h1>
+        <div class="sub">▼ <kbd>space</kbd> pause · <kbd>←</kbd>/<kbd>→</kbd> step · <kbd>s</kbd>/<kbd>w</kbd> speed · <kbd>+</kbd>/<kbd>-</kbd> quality </div>
+
+        <div class="preview-row">
+            <div class="preview-container">
+                <!-- no controls, no title (just camera) -->
+                <video id="preview" autoplay playsinline muted></video>
+                <div class="countdown-overlay" id="countdownOverlay">5</div>
+                <div class="preview-label">live cam (clean)</div>
             </div>
-            
-            <div id="fileTab" class="tab-content active">
-                <p style="color: #888; margin-bottom: 20px;">Select a video file from your device</p>
-                
-                <label for="fileInput" class="file-input-label">
-                    📁 Browse Files
-                </label>
-                <input type="file" id="fileInput" accept="video/*">
-                
-                <div id="selectedFileInfo"></div>
+            <div class="preview-container">
+                <!-- playback video: no controls, no title, no branding -->
+                <video id="playbackPreview" playsinline></video>
+                <div class="preview-label">cut preview (clean)</div>
             </div>
-            
-            <div id="youtubeTab" class="tab-content">
-                <div class="url-input-container">
-                    <p style="color: #888; margin-bottom: 20px;">Paste any YouTube link</p>
-                    
-                    <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=...">
-                    
-                    <button class="youtube-button" onclick="loadYouTubeVideo()">
-                        ▶️ Load & Play
-                    </button>
-                    
-                    <div class="examples">
-                        <p>📋 Examples (click to try):</p>
-                        <ul>
-                            <li onclick="fillExample('youtube', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')">🎵 Rick Astley - Never Gonna Give You Up</li>
-                            <li onclick="fillExample('youtube', 'https://youtu.be/jNQXAC9IVRw')">📹 First YouTube video ever</li>
-                            <li onclick="fillExample('youtube', 'https://www.youtube.com/watch?v=QH2-TGUlwu4')">🌌 4K Nature Relaxation</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="liveTab" class="tab-content">
-                <div class="url-input-container">
-                    <span class="live-badge">🔴 LIVE</span>
-                    <p>Paste any live stream URL (HLS, RTMP, YouTube Live, Twitch, etc.)</p>
-                    
-                    <input type="text" id="streamUrl" placeholder="https://example.com/stream.m3u8 or YouTube Live URL">
-                    
-                    <button class="stream-button" onclick="loadLiveStream()">
-                        🔴 Connect to Live Stream
-                    </button>
-                    
-                    <div class="stream-info">
-                        <h4>Supported Live Formats:</h4>
-                        <p>• <strong>YouTube Live</strong> - Any YouTube live stream URL</p>
-                        <p>• <strong>HLS</strong> - <code>.m3u8</code> live streams</p>
-                        <p>• <strong>DASH</strong> - <code>.mpd</code> live streams</p>
-                        <p>• <strong>RTMP</strong> - <code>rtmp://</code> streams (if browser supports)</p>
-                        <p>• <strong>Twitch</strong> - Twitch.tv live streams (via embed)</p>
-                    </div>
-                    
-                    <div class="examples live-examples">
-                        <p>🔴 Live Stream Examples (click to try):</p>
-                        <ul>
-                            <li onclick="fillExample('live', 'https://www.youtube.com/watch?v=21X5lGlDOfg')">📺 NASA Live (YouTube Live)</li>
-                            <li onclick="fillExample('live', 'https://www.twitch.tv/riotgames')">🎮 Twitch Live - Riot Games</li>
-                            <li onclick="fillExample('live', 'https://www.youtube.com/watch?v=5qap5aO4i9A')">🌍 Earth View from Space (Live)</li>
-                            <li onclick="fillExample('live', 'https://www.twitch.tv/xqc')">🎮 Twitch Live - xQc</li>
-                            <li onclick="fillExample('live', 'rtmp://live.example.com/stream')">🔧 Test RTMP Stream</li>
-                        </ul>
-                    </div>
-                    
-                    <p style="color: #666; font-size: 12px; margin-top: 20px;">
-                        ⚠️ Note: Some live streams may require CORS support or specific formats
-                    </p>
-                </div>
-            </div>
-            
-            <div class="error-message" id="errorMessage"></div>
-            
-            <p style="margin-top: 30px; font-size: 12px; color: #666; border-top: 1px solid #333; padding-top: 20px;">
-                ⚠️ Press ESC to exit fullscreen (only way to stop)<br>
-                Videos/Streams play with no controls - Live streams don't loop
-            </p>
         </div>
-    </div>
-    
-    <div class="loading" id="loadingIndicator">
-        Loading...
-    </div>
-    
-    <div class="exit-note hidden" id="exitNote">
-        Press ESC to exit
-    </div>
-    
-    <div class="source-indicator hidden" id="sourceIndicator">
-        <span id="sourceText"></span>
-    </div>
-    
-    <div class="live-indicator hidden" id="liveIndicator">
-        🔴 LIVE
-    </div>
-    
-    <div class="video-info hidden" id="videoInfo">
-        <span id="resolution"></span>
-    </div>
-    
-    <div class="loop-indicator hidden" id="loopIndicator">
-        ↻ seamless loop
+
+        <!-- Timeline section (hidden until recording exists) -->
+        <div class="timeline-section" id="timelineSection" style="display: none;">
+            <div class="timeline-header">
+                <span>✂️ drag handles to cut</span>
+                <span class="cut-badge" id="cutRange">0:00 – 0:00</span>
+            </div>
+            
+            <div class="playback-controls">
+                <button class="playback-btn" id="playBtn">▶️ Play</button>
+                <button class="playback-btn" id="pauseBtn">⏸️ Pause <span class="key-hint">space</span></button>
+                <button class="playback-btn" id="resetBtn">↺ Reset</button>
+            </div>
+            
+            <!-- Timeline track -->
+            <div class="timeline-track" id="timelineTrack">
+                <div class="timeline-fill" id="timelineFill" style="left: 0%; width: 100%;"></div>
+                
+                <!-- Start handle -->
+                <div class="timeline-handle start-handle" id="startHandle" style="left: 0%;">
+                    <div class="handle-line"></div>
+                    <div class="handle-circle"></div>
+                </div>
+                
+                <!-- End handle -->
+                <div class="timeline-handle end-handle" id="endHandle" style="left: 100%;">
+                    <div class="handle-line"></div>
+                    <div class="handle-circle"></div>
+                </div>
+            </div>
+            
+            <div class="time-display">
+                <span id="startLabel">0:00</span>
+                <span id="endLabel">0:00</span>
+            </div>
+            
+            <div class="cut-values">
+                <span>start: <span id="startValue">0.0s</span></span>
+                <span>end: <span id="endValue">0.0s</span></span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="record-btn" id="startBtn">🔴 Start Recording</button>
+            <button class="stop-btn" id="stopBtn" disabled>⏹️ Stop</button>
+            <button class="download-btn" id="downloadBtn" disabled>💾 Download Cut</button>
+        </div>
+
+        <div class="progress" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="info-row">
+            <span>⏱️ <span id="timer">0:00</span></span>
+            <span class="badge" id="status">⏸️ idle</span>
+        </div>
+        <div class="legend">
+            <kbd>←</kbd> step back 1s · <kbd>→</kbd> step forward 1s · <kbd>s</kbd> speed+ · <kbd>w</kbd> speed- · <kbd>+</kbd> quality+ · <kbd>-</kbd> quality-
+        </div>
     </div>
 
     <script>
-        // DOM Elements
-        const videoPlayer = document.getElementById('videoPlayer');
-        const youtubePlayer = document.getElementById('youtubePlayer');
-        const overlay = document.getElementById('overlay');
-        const fileInput = document.getElementById('fileInput');
-        const selectedFileInfo = document.getElementById('selectedFileInfo');
-        const youtubeUrl = document.getElementById('youtubeUrl');
-        const streamUrl = document.getElementById('streamUrl');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const exitNote = document.getElementById('exitNote');
-        const sourceIndicator = document.getElementById('sourceIndicator');
-        const sourceText = document.getElementById('sourceText');
-        const liveIndicator = document.getElementById('liveIndicator');
-        const videoInfo = document.getElementById('videoInfo');
-        const resolution = document.getElementById('resolution');
-        const loopIndicator = document.getElementById('loopIndicator');
-        const errorMessage = document.getElementById('errorMessage');
-        
-        // YouTube API variables
-        let ytPlayer = null;
-        let isYouTubeReady = false;
-        let pendingYouTubeId = null;
-        
-        // Live stream variables
-        let mediaSource = null;
-        let isLiveStream = false;
-        
-        // Loop variables
-        let loopCheckInterval = null;
-        let lastTime = 0;
-        let streamKeepAliveInterval = null;
-        
-        // Load YouTube API
-        function loadYouTubeAPI() {
-            if (window.YT) {
-                isYouTubeReady = true;
-                return;
+        (function() {
+            // DOM elements
+            const previewVideo = document.getElementById('preview');
+            const playbackVideo = document.getElementById('playbackPreview');
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const playBtn = document.getElementById('playBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const timerSpan = document.getElementById('timer');
+            const statusSpan = document.getElementById('status');
+            const countdownOverlay = document.getElementById('countdownOverlay');
+            
+            // Timeline elements
+            const timelineSection = document.getElementById('timelineSection');
+            const timelineTrack = document.getElementById('timelineTrack');
+            const startHandle = document.getElementById('startHandle');
+            const endHandle = document.getElementById('endHandle');
+            const timelineFill = document.getElementById('timelineFill');
+            const startLabel = document.getElementById('startLabel');
+            const endLabel = document.getElementById('endLabel');
+            const startValue = document.getElementById('startValue');
+            const endValue = document.getElementById('endValue');
+            const cutRange = document.getElementById('cutRange');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+
+            // State
+            let mediaStream = null;
+            let mediaRecorder = null;
+            let recordedChunks = [];
+            let recordingStartTime = 0;
+            let timerInterval = null;
+            
+            // Countdown
+            let countdownInterval = null;
+            let countdownValue = 5;
+            let isCountdownActive = false;
+            
+            // Video data
+            let recordedBlob = null;
+            let recordedUrl = null;
+            let videoDuration = 0;
+            
+            // Cut range (0-1)
+            let cutStart = 0;
+            let cutEnd = 1;
+            
+            // Dragging
+            let activeHandle = null;
+            let isDragging = false;
+
+            // playback speed & quality simulation (quality changes bitrate on next download)
+            let playbackSpeed = 1.0;
+            let qualityLevel = 100; // percent bitrate
+
+            // Format time
+            function formatTime(seconds) {
+                if (!seconds || isNaN(seconds)) return '0:00';
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
             }
-            
-            const tag = document.createElement('script');
-            tag.src = 'https://www.youtube.com/iframe_api';
-            const firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        }
-        
-        // YouTube API ready
-        window.onYouTubeIframeAPIReady = function() {
-            isYouTubeReady = true;
-            if (pendingYouTubeId) {
-                initYouTubePlayer(pendingYouTubeId);
-                pendingYouTubeId = null;
+
+            function formatSeconds(sec) {
+                if (!sec || isNaN(sec)) return '0.0s';
+                return sec.toFixed(1) + 's';
             }
-        };
-        
-        // Initialize YouTube player with minimal UI
-        function initYouTubePlayer(videoId, isLive = false) {
-            if (!isYouTubeReady) {
-                pendingYouTubeId = videoId;
-                return;
+
+            // Timer functions
+            function updateTimer() {
+                if (!recordingStartTime) return;
+                const elapsed = (Date.now() - recordingStartTime) / 1000;
+                timerSpan.textContent = formatTime(elapsed);
             }
-            
-            if (ytPlayer) {
-                ytPlayer.destroy();
+
+            function startTimer() {
+                stopTimer();
+                recordingStartTime = Date.now();
+                timerSpan.textContent = '0:00';
+                timerInterval = setInterval(updateTimer, 200);
             }
-            
-            youtubePlayer.style.display = 'block';
-            videoPlayer.style.display = 'none';
-            
-            isLiveStream = isLive;
-            
-            const playerVars = {
-                'autoplay': 1,
-                'controls': 0,
-                'disablekb': 1,
-                'fs': 0,
-                'iv_load_policy': 3,
-                'modestbranding': 1,
-                'playsinline': 1,
-                'rel': 0,
-                'showinfo': 0,
-                'mute': 0,
-                'cc_load_policy': 0,
-                'color': 'white',
-                'hl': 'en',
-                'enablejsapi': 1,
-                'origin': window.location.origin
-            };
-            
-            // For live streams, don't enable loop
-            if (!isLive) {
-                playerVars.loop = 1;
-                playerVars.playlist = videoId; // Required for loop to work
+
+            function stopTimer() {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                recordingStartTime = 0;
             }
-            
-            ytPlayer = new YT.Player('youtubePlayer', {
-                videoId: videoId,
-                playerVars: playerVars,
-                events: {
-                    'onReady': onYouTubeReady,
-                    'onStateChange': onYouTubeStateChange,
-                    'onError': onYouTubeError
+
+            // Stop all tracks
+            function stopAllTracks() {
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                    mediaStream = null;
+                }
+                previewVideo.srcObject = null;
+            }
+
+            function stopCountdown() {
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                }
+                countdownOverlay.classList.remove('visible');
+                isCountdownActive = false;
+            }
+
+            // Update UI for recording state
+            function setUiForRecording(recording) {
+                if (recording) {
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    downloadBtn.disabled = true;
+                    statusSpan.innerHTML = '🔴 recording';
+                    timelineSection.style.display = 'none';
+                } else {
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    downloadBtn.disabled = recordedChunks.length === 0;
+                    statusSpan.innerHTML = recordedChunks.length ? '⏸️ ready' : '⏹️ idle';
+                    
+                    if (recordedChunks.length > 0) {
+                        loadVideoForPreview();
+                    }
+                }
+            }
+
+            // Load recorded video for preview
+            function loadVideoForPreview() {
+                if (recordedUrl) {
+                    URL.revokeObjectURL(recordedUrl);
+                }
+                
+                recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
+                recordedUrl = URL.createObjectURL(recordedBlob);
+                playbackVideo.src = recordedUrl;
+                
+                playbackVideo.onloadedmetadata = () => {
+                    videoDuration = playbackVideo.duration;
+                    console.log('Video loaded, duration:', videoDuration);
+                    
+                    // Reset cuts
+                    cutStart = 0;
+                    cutEnd = 1;
+                    
+                    // Update timeline
+                    updateTimeline();
+                    timelineSection.style.display = 'block';
+                    
+                    // Set video to start
+                    playbackVideo.currentTime = 0;
+                };
+                
+                playbackVideo.load();
+            }
+
+            // Update timeline UI
+            function updateTimeline() {
+                if (!videoDuration) return;
+                
+                // Update handle positions
+                startHandle.style.left = (cutStart * 100) + '%';
+                endHandle.style.left = (cutEnd * 100) + '%';
+                
+                // Update fill between handles
+                timelineFill.style.left = (cutStart * 100) + '%';
+                timelineFill.style.width = ((cutEnd - cutStart) * 100) + '%';
+                
+                // Update time labels
+                const startSec = cutStart * videoDuration;
+                const endSec = cutEnd * videoDuration;
+                
+                startLabel.textContent = formatTime(startSec);
+                endLabel.textContent = formatTime(endSec);
+                startValue.textContent = formatSeconds(startSec);
+                endValue.textContent = formatSeconds(endSec);
+                cutRange.textContent = `${formatTime(startSec)} – ${formatTime(endSec)}`;
+            }
+
+            // Handle drag start
+            function startDrag(handle, e) {
+                e.preventDefault();
+                activeHandle = handle;
+                isDragging = true;
+                
+                function onMouseMove(e) {
+                    if (!isDragging || !videoDuration) return;
+                    
+                    const rect = timelineTrack.getBoundingClientRect();
+                    let x = e.clientX - rect.left;
+                    x = Math.max(0, Math.min(rect.width, x));
+                    let percent = x / rect.width;
+                    
+                    if (activeHandle === 'start') {
+                        cutStart = Math.min(percent, cutEnd - 0.01);
+                    } else {
+                        cutEnd = Math.max(percent, cutStart + 0.01);
+                    }
+                    
+                    updateTimeline();
+                }
+                
+                function onMouseUp() {
+                    isDragging = false;
+                    activeHandle = null;
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                }
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }
+
+            // Attach drag handlers
+            startHandle.addEventListener('mousedown', (e) => startDrag('start', e));
+            endHandle.addEventListener('mousedown', (e) => startDrag('end', e));
+
+            // Playback controls
+            playBtn.addEventListener('click', () => {
+                if (!playbackVideo || !videoDuration) return;
+                
+                // If at or past end, restart from start
+                if (playbackVideo.currentTime >= cutEnd * videoDuration) {
+                    playbackVideo.currentTime = cutStart * videoDuration;
+                }
+                
+                playbackVideo.playbackRate = playbackSpeed;
+                playbackVideo.play().catch(e => console.log('Playback error:', e));
+            });
+
+            pauseBtn.addEventListener('click', () => {
+                if (!playbackVideo) return;
+                playbackVideo.pause();
+            });
+
+            resetBtn.addEventListener('click', () => {
+                if (!playbackVideo) return;
+                playbackVideo.currentTime = cutStart * videoDuration;
+                playbackVideo.pause();
+            });
+
+            // Monitor playback to stop at cut end
+            playbackVideo.addEventListener('timeupdate', () => {
+                if (!videoDuration) return;
+                
+                if (playbackVideo.currentTime >= cutEnd * videoDuration) {
+                    playbackVideo.pause();
+                    playbackVideo.currentTime = cutStart * videoDuration;
                 }
             });
-        }
-        
-        // YouTube ready
-        function onYouTubeReady(event) {
-            loadingIndicator.classList.remove('show');
-            
-            // Check if it's a live stream
-            const duration = event.target.getDuration();
-            const isLive = (duration === 0); // Live streams have duration 0
-            
-            if (isLive) {
-                isLiveStream = true;
-                liveIndicator.classList.remove('hidden');
-                loopIndicator.classList.add('hidden');
+
+            // Start recording process
+            async function startRecording() {
+                recordedChunks = [];
+                downloadBtn.disabled = true;
+                stopAllTracks();
+                stopCountdown();
+                progressContainer.style.display = 'none';
+                timelineSection.style.display = 'none';
                 
-                // Set up keep-alive for live stream
-                setupLiveStreamKeepAlive();
-            } else {
-                // Set up seamless loop for recorded videos
-                setupYouTubeSeamlessLoop();
-                loopIndicator.classList.remove('hidden');
+                if (recordedUrl) {
+                    URL.revokeObjectURL(recordedUrl);
+                    recordedUrl = null;
+                }
+
+                try {
+                    const displayStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: true,
+                        audio: true,
+                    });
+
+                    let micStream = null;
+                    try {
+                        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    } catch (e) {}
+
+                    const audioTracks = [];
+                    displayStream.getAudioTracks().forEach(t => audioTracks.push(t));
+                    if (micStream) micStream.getAudioTracks().forEach(t => audioTracks.push(t));
+
+                    const videoTrack = displayStream.getVideoTracks()[0];
+                    
+                    const finalStream = audioTracks.length 
+                        ? new MediaStream([videoTrack, ...audioTracks])
+                        : displayStream;
+
+                    mediaStream = finalStream;
+                    previewVideo.srcObject = mediaStream;
+
+                    videoTrack.onended = () => {
+                        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                            mediaRecorder.stop();
+                        }
+                        stopAllTracks();
+                        stopCountdown();
+                        setUiForRecording(false);
+                    };
+
+                    startCountdown();
+
+                } catch (err) {
+                    console.error(err);
+                    statusSpan.innerHTML = '⚠️ cancelled';
+                    setUiForRecording(false);
+                }
             }
-            
-            // Hide all YouTube UI elements by covering them
-            const iframe = youtubePlayer.querySelector('iframe');
-            if (iframe) {
-                iframe.style.pointerEvents = 'none';
-            }
-            
-            // Force fullscreen
-            enterFullscreen();
-            
-            // Update indicators
-            sourceText.textContent = isLive ? 'YouTube Live' : 'YouTube';
-            sourceIndicator.classList.remove('hidden');
-            exitNote.classList.remove('hidden');
-            videoInfo.classList.add('hidden');
-            
-            // Hide overlay
-            overlay.classList.add('hidden');
-        }
-        
-        // YouTube state change
-        function onYouTubeStateChange(event) {
-            // Block all controls
-            if (event.data === YT.PlayerState.PAUSED) {
-                event.target.playVideo();
-            }
-            
-            // Handle ended for recorded videos
-            if (!isLiveStream && event.data === YT.PlayerState.ENDED) {
-                event.target.playVideo();
-            }
-            
-            // For live streams, ensure it keeps playing
-            if (isLiveStream && event.data === YT.PlayerState.PAUSED) {
-                event.target.playVideo();
-            }
-            
-            // If video is buffering, make sure it resumes
-            if (event.data === YT.PlayerState.BUFFERING) {
-                setTimeout(() => {
-                    if (ytPlayer && ytPlayer.getPlayerState() === YT.PlayerState.BUFFERING) {
-                        ytPlayer.playVideo();
+
+            function startCountdown() {
+                stopCountdown();
+                countdownValue = 5;
+                countdownOverlay.textContent = countdownValue;
+                countdownOverlay.classList.add('visible');
+                isCountdownActive = true;
+
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                statusSpan.innerHTML = '⏳ recording in 5...';
+
+                countdownInterval = setInterval(() => {
+                    countdownValue -= 1;
+                    countdownOverlay.textContent = countdownValue;
+
+                    if (countdownValue <= 0) {
+                        stopCountdown();
+                        
+                        try {
+                            mediaRecorder = new MediaRecorder(mediaStream, {
+                                mimeType: 'video/webm;codecs=vp8,opus',
+                                videoBitsPerSecond: 25000000,
+                            });
+
+                            mediaRecorder.ondataavailable = (e) => {
+                                if (e.data.size > 0) recordedChunks.push(e.data);
+                            };
+
+                            mediaRecorder.onstop = () => {
+                                stopTimer();
+                                setUiForRecording(false);
+                            };
+
+                            mediaRecorder.start(5000);
+                            startTimer();
+                            setUiForRecording(true);
+                            statusSpan.innerHTML = '🔴 recording';
+
+                        } catch (e) {
+                            console.error(e);
+                            statusSpan.innerHTML = '⚠️ recorder error';
+                        }
                     }
                 }, 1000);
             }
-        }
-        
-        // YouTube error
-        function onYouTubeError(event) {
-            loadingIndicator.classList.remove('show');
-            errorMessage.textContent = 'Error loading YouTube video. Please check the URL.';
-            console.error('YouTube error:', event);
-        }
-        
-        // YouTube seamless loop
-        function setupYouTubeSeamlessLoop() {
-            if (loopCheckInterval) {
-                clearInterval(loopCheckInterval);
-            }
-            
-            loopCheckInterval = setInterval(() => {
-                if (!ytPlayer || !document.fullscreenElement || isLiveStream) return;
-                
-                const state = ytPlayer.getPlayerState();
-                const currentTime = ytPlayer.getCurrentTime();
-                const duration = ytPlayer.getDuration();
-                
-                if (state === YT.PlayerState.PAUSED && duration > 0 && currentTime < duration - 0.5) {
-                    ytPlayer.playVideo();
-                }
-                
-                if (state === YT.PlayerState.ENDED || (duration > 0 && currentTime >= duration - 0.1)) {
-                    ytPlayer.seekTo(0, true);
-                    ytPlayer.playVideo();
-                }
-                
-            }, 100);
-        }
-        
-        // Live stream keep-alive
-        function setupLiveStreamKeepAlive() {
-            if (streamKeepAliveInterval) {
-                clearInterval(streamKeepAliveInterval);
-            }
-            
-            streamKeepAliveInterval = setInterval(() => {
-                if (!ytPlayer || !document.fullscreenElement || !isLiveStream) return;
-                
-                const state = ytPlayer.getPlayerState();
-                
-                // If paused, resume
-                if (state === YT.PlayerState.PAUSED) {
-                    ytPlayer.playVideo();
-                }
-                
-                // If ended (shouldn't happen for live), reload
-                if (state === YT.PlayerState.ENDED) {
-                    ytPlayer.playVideo();
-                }
-                
-                // If unstarted, try to play
-                if (state === -1) {
-                    ytPlayer.playVideo();
-                }
-                
-            }, 5000); // Check every 5 seconds
-        }
-        
-        // Load live stream from URL
-        window.loadLiveStream = function() {
-            const url = streamUrl.value.trim();
-            if (!url) {
-                errorMessage.textContent = 'Please enter a stream URL';
-                return;
-            }
-            
-            loadingIndicator.classList.add('show');
-            loadingIndicator.classList.add('live-loading');
-            errorMessage.textContent = '';
-            
-            // Check if it's a YouTube live stream
-            if (url.includes('youtube.com/watch') || url.includes('youtu.be/') || url.includes('youtube.com/live')) {
-                const videoId = extractYouTubeId(url);
-                if (videoId) {
-                    youtubePlayer.style.display = 'block';
-                    videoPlayer.style.display = 'none';
-                    initYouTubePlayer(videoId, true);
-                    return;
+
+            function stopAction() {
+                if (isCountdownActive) {
+                    stopCountdown();
+                    statusSpan.innerHTML = '⏸️ cancelled';
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                } else if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
                 }
             }
-            
-            // Check if it's a Twitch stream
-            if (url.includes('twitch.tv/')) {
-                loadTwitchStream(url);
-                return;
-            }
-            
-            // Handle as direct stream URL (HLS, RTMP, etc.)
-            loadDirectStream(url);
-        };
-        
-        // Load Twitch stream
-        function loadTwitchStream(url) {
-            // Extract channel name from URL
-            const match = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-            if (!match) {
-                errorMessage.textContent = 'Invalid Twitch URL';
-                loadingIndicator.classList.remove('show');
-                return;
-            }
-            
-            const channel = match[1];
-            
-            // Use Twitch embed with minimal UI
-            youtubePlayer.style.display = 'block';
-            videoPlayer.style.display = 'none';
-            
-            youtubePlayer.innerHTML = `
-                <iframe src="https://player.twitch.tv/?channel=${channel}&parent=${window.location.hostname}&controls=false&autoplay=true&muted=false" 
-                        frameborder="0" 
-                        allowfullscreen="false" 
-                        scrolling="no"
-                        allow="autoplay; fullscreen"
-                        style="width:100%; height:100%; pointer-events:none;">
-                </iframe>
-            `;
-            
-            isLiveStream = true;
-            liveIndicator.classList.remove('hidden');
-            loopIndicator.classList.add('hidden');
-            sourceText.textContent = `Twitch: ${channel}`;
-            sourceIndicator.classList.remove('hidden');
-            
-            enterFullscreen();
-            
-            // Block iframe interactions
-            setTimeout(() => {
-                loadingIndicator.classList.remove('show');
-                overlay.classList.add('hidden');
-                exitNote.classList.remove('hidden');
-            }, 1000);
-            
-            // Keep alive for Twitch
-            setupLiveStreamKeepAlive();
-        }
-        
-        // Load direct stream (HLS, RTMP, etc.)
-        function loadDirectStream(url) {
-            videoPlayer.style.display = 'block';
-            youtubePlayer.style.display = 'none';
-            
-            // Clear any existing source
-            videoPlayer.src = '';
-            videoPlayer.load();
-            
-            // Set new source
-            videoPlayer.src = url;
-            
-            // Handle HLS streams
-            if (url.includes('.m3u8')) {
-                if (Hls.isSupported()) {
-                    const hls = new Hls();
-                    hls.loadSource(url);
-                    hls.attachMedia(videoPlayer);
-                } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
-                    videoPlayer.src = url;
-                }
-            }
-            
-            videoPlayer.load();
-            
-            videoPlayer.onloadedmetadata = () => {
-                // Check if it's live (duration = Infinity or very large)
-                const isLive = !isFinite(videoPlayer.duration) || videoPlayer.duration === Infinity;
+
+            // Download with cut (simulate quality by scaling bitrate)
+            function downloadCut() {
+                if (!recordedChunks.length) return;
+
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '0%';
+                statusSpan.innerHTML = '⏳ processing cut...';
+                downloadBtn.disabled = true;
+
+                const originalBlob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(originalBlob);
                 
-                isLiveStream = isLive;
+                const video = document.createElement('video');
+                video.src = url;
+                video.muted = true;
                 
-                if (isLive) {
-                    liveIndicator.classList.remove('hidden');
-                    loopIndicator.classList.add('hidden');
-                    setupLiveStreamKeepAlive();
-                } else {
-                    setupLocalVideoSeamlessLoop();
-                }
-                
-                resolution.textContent = `${videoPlayer.videoWidth}x${videoPlayer.videoHeight}`;
-                sourceText.textContent = 'Direct Stream';
-                sourceIndicator.classList.remove('hidden');
-                
-                enterFullscreen();
-                
-                videoPlayer.play()
-                    .then(() => {
-                        loadingIndicator.classList.remove('show');
-                        overlay.classList.add('hidden');
-                        exitNote.classList.remove('hidden');
-                        if (!isLive) {
-                            videoInfo.classList.remove('hidden');
-                            loopIndicator.classList.remove('hidden');
-                        }
-                    })
-                    .catch(err => {
-                        console.log('Play failed:', err);
-                        setTimeout(() => videoPlayer.play(), 100);
+                video.onloadedmetadata = () => {
+                    const startSec = cutStart * video.duration;
+                    const endSec = cutEnd * video.duration;
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 1080;
+                    canvas.height = 1920;
+                    const ctx = canvas.getContext('2d');
+                    
+                    const canvasStream = canvas.captureStream(30);
+                    const audioStream = video.captureStream();
+                    const audioTracks = audioStream.getAudioTracks();
+                    
+                    const finalStream = new MediaStream();
+                    finalStream.addTrack(canvasStream.getVideoTracks()[0]);
+                    audioTracks.forEach(t => finalStream.addTrack(t));
+                    
+                    // Use qualityLevel to adjust bitrate (simulate + / -)
+                    let bitrate = Math.floor(20000000 * (qualityLevel / 100));
+                    bitrate = Math.max(1000000, Math.min(50000000, bitrate)); // clamp
+                    
+                    const finalRecorder = new MediaRecorder(finalStream, {
+                        mimeType: 'video/webm;codecs=vp8,opus',
+                        videoBitsPerSecond: bitrate,
                     });
-            };
-            
-            videoPlayer.onerror = (err) => {
-                loadingIndicator.classList.remove('show');
-                errorMessage.textContent = 'Error loading stream. Check URL and CORS.';
-                console.error('Stream error:', err);
-            };
-        }
-        
-        // Enter fullscreen
-        function enterFullscreen() {
-            const container = document.getElementById('container');
-            if (container.requestFullscreen) {
-                container.requestFullscreen();
-            } else if (container.webkitRequestFullscreen) {
-                container.webkitRequestFullscreen();
-            } else if (container.msRequestFullscreen) {
-                container.msRequestFullscreen();
-            }
-        }
-        
-        // Local video seamless loop
-        function setupLocalVideoSeamlessLoop() {
-            if (loopCheckInterval) {
-                clearInterval(loopCheckInterval);
-            }
-            
-            loopCheckInterval = setInterval(() => {
-                if (!videoPlayer.src || !document.fullscreenElement || isLiveStream) return;
-                
-                const currentTime = videoPlayer.currentTime;
-                const duration = videoPlayer.duration;
-                
-                if (duration > 0 && currentTime >= duration - 0.05) {
-                    videoPlayer.currentTime = 0;
-                    if (videoPlayer.paused) {
-                        videoPlayer.play().catch(() => {});
+                    
+                    const outputChunks = [];
+                    finalRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) outputChunks.push(e.data);
+                    };
+                    
+                    finalRecorder.onstop = () => {
+                        const outputBlob = new Blob(outputChunks, { type: 'video/webm' });
+                        const outputUrl = URL.createObjectURL(outputBlob);
+                        const a = document.createElement('a');
+                        a.href = outputUrl;
+                        a.download = `cut_${qualityLevel}q_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.webm`;
+                        a.click();
+                        
+                        URL.revokeObjectURL(outputUrl);
+                        URL.revokeObjectURL(url);
+                        progressContainer.style.display = 'none';
+                        statusSpan.innerHTML = '✅ download complete';
+                        downloadBtn.disabled = false;
+                    };
+                    
+                    finalRecorder.start();
+                    
+                    video.currentTime = startSec;
+                    video.play();
+                    
+                    function drawFrame() {
+                        if (video.paused || video.ended || video.currentTime >= endSec) {
+                            if (finalRecorder.state !== 'inactive') finalRecorder.stop();
+                            return;
+                        }
+                        
+                        const progress = ((video.currentTime - startSec) / (endSec - startSec)) * 100;
+                        progressBar.style.width = progress + '%';
+                        
+                        ctx.clearRect(0, 0, 1080, 1920);
+                        
+                        const vw = video.videoWidth;
+                        const vh = video.videoHeight;
+                        const targetAspect = 9/16;
+                        const videoAspect = vw / vh;
+                        
+                        let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
+                        
+                        if (videoAspect > targetAspect) {
+                            drawHeight = vh;
+                            drawWidth = vh * targetAspect;
+                            offsetX = (vw - drawWidth) / 2;
+                        } else {
+                            drawWidth = vw;
+                            drawHeight = vw / targetAspect;
+                            offsetY = (vh - drawHeight) / 2;
+                        }
+                        
+                        ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight, 0, 0, 1080, 1920);
+                        
+                        requestAnimationFrame(drawFrame);
                     }
-                }
-                
-                if (videoPlayer.paused && !videoPlayer.ended && duration > 0 && currentTime < duration - 0.5) {
-                    videoPlayer.play().catch(() => {});
-                }
-                
-                if (lastTime === currentTime && !videoPlayer.paused && duration > 0 && currentTime < duration - 0.5) {
-                    if (currentTime > 0) {
-                        videoPlayer.currentTime = currentTime - 0.01;
-                        videoPlayer.currentTime = currentTime;
-                    }
-                }
-                
-                lastTime = currentTime;
-                
-            }, 100);
-            
-            videoPlayer.addEventListener('ended', function(e) {
-                e.preventDefault();
-                if (!isLiveStream) {
-                    this.currentTime = 0;
-                    this.play().catch(() => {});
-                }
-            });
-        }
-        
-        // Disable local video interactions
-        function disableVideoInteractions() {
-            videoPlayer.style.pointerEvents = 'none';
-            videoPlayer.removeAttribute('controls');
-            
-            videoPlayer.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            });
-            
-            videoPlayer.addEventListener('dblclick', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            });
-            
-            videoPlayer.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            });
-            
-            videoPlayer.addEventListener('pause', (e) => {
-                e.preventDefault();
-                if (videoPlayer.src && !videoPlayer.ended && videoPlayer.currentTime < videoPlayer.duration - 0.5) {
-                    videoPlayer.play().catch(() => {});
-                }
-            });
-            
-            videoPlayer.addEventListener('timeupdate', () => {
-                lastTime = videoPlayer.currentTime;
-            });
-        }
-        
-        // Block keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                return true;
-            }
-            
-            const blockedKeys = [
-                ' ', 'Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
-                'f', 'F', 'k', 'K', 'm', 'M', 'p', 'P', '[', ']', '<', '>',
-                'Home', 'End', 'PageUp', 'PageDown'
-            ];
-            
-            if (blockedKeys.includes(e.key) || blockedKeys.includes(e.code)) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }
-            
-            if (document.fullscreenElement || document.webkitFullscreenElement) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }
-        }, true);
-        
-        // Prevent right-click
-        document.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            return false;
-        });
-        
-        // Tab switching
-        window.switchTab = function(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
-            if (tab === 'file') {
-                document.querySelectorAll('.tab')[0].classList.add('active');
-                document.getElementById('fileTab').classList.add('active');
-            } else if (tab === 'youtube') {
-                document.querySelectorAll('.tab')[1].classList.add('active');
-                document.getElementById('youtubeTab').classList.add('active');
-            } else {
-                document.querySelectorAll('.tab')[2].classList.add('active');
-                document.getElementById('liveTab').classList.add('active');
-            }
-            
-            errorMessage.textContent = '';
-            loadingIndicator.classList.remove('show');
-            loadingIndicator.classList.remove('live-loading');
-        };
-        
-        // Fill example URLs
-        window.fillExample = function(type, url) {
-            if (type === 'youtube') {
-                youtubeUrl.value = url;
-            } else {
-                streamUrl.value = url;
-            }
-            errorMessage.textContent = '';
-        };
-        
-        // Load YouTube video
-        window.loadYouTubeVideo = function() {
-            const url = youtubeUrl.value.trim();
-            if (!url) {
-                errorMessage.textContent = 'Please enter a YouTube URL';
-                return;
-            }
-            
-            const videoId = extractYouTubeId(url);
-            if (!videoId) {
-                errorMessage.textContent = 'Invalid YouTube URL';
-                return;
-            }
-            
-            errorMessage.textContent = '';
-            loadingIndicator.classList.add('show');
-            loadingIndicator.classList.remove('live-loading');
-            
-            videoPlayer.style.display = 'none';
-            youtubePlayer.style.display = 'block';
-            isLiveStream = false;
-            
-            initYouTubePlayer(videoId, false);
-        };
-        
-        // Extract YouTube ID from URL
-        function extractYouTubeId(url) {
-            const patterns = [
-                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/|youtube\.com\/live\/)([^&?#]+)/,
-                /youtube\.com\/watch\?.*[?&]v=([^&?#]+)/,
-                /m\.youtube\.com\/watch\?v=([^&?#]+)/
-            ];
-            
-            for (const pattern of patterns) {
-                const match = url.match(pattern);
-                if (match) return match[1];
-            }
-            
-            return null;
-        }
-        
-        // File input handler
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            
-            if (file) {
-                youtubePlayer.style.display = 'none';
-                videoPlayer.style.display = 'block';
-                isLiveStream = false;
-                
-                selectedFileInfo.textContent = `Selected: ${file.name}`;
-                loadingIndicator.classList.add('show');
-                loadingIndicator.classList.remove('live-loading');
-                errorMessage.textContent = '';
-                
-                const videoUrl = URL.createObjectURL(file);
-                videoPlayer.src = videoUrl;
-                videoPlayer.load();
-                
-                videoPlayer.onloadedmetadata = () => {
-                    resolution.textContent = `${videoPlayer.videoWidth}x${videoPlayer.videoHeight}`;
                     
-                    overlay.classList.add('hidden');
-                    
-                    sourceText.textContent = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
-                    sourceIndicator.classList.remove('hidden');
-                    exitNote.classList.remove('hidden');
-                    videoInfo.classList.remove('hidden');
-                    loopIndicator.classList.remove('hidden');
-                    liveIndicator.classList.add('hidden');
-                    
-                    enterFullscreen();
-                    setupLocalVideoSeamlessLoop();
-                    disableVideoInteractions();
-                    
-                    setTimeout(() => {
-                        videoPlayer.play()
-                            .then(() => {
-                                loadingIndicator.classList.remove('show');
-                            })
-                            .catch(err => {
-                                console.log('Play failed:', err);
-                                loadingIndicator.classList.remove('show');
-                                setTimeout(() => videoPlayer.play(), 100);
-                            });
-                    }, 500);
+                    requestAnimationFrame(drawFrame);
                 };
                 
-                videoPlayer.onerror = () => {
-                    loadingIndicator.classList.remove('show');
-                    errorMessage.textContent = 'Error loading video file';
-                };
+                video.load();
             }
-        });
-        
-        // Fullscreen change handler
-        function handleFullscreenChange() {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (loopCheckInterval) {
-                    clearInterval(loopCheckInterval);
-                    loopCheckInterval = null;
+
+            // ---------- KEYBOARD COMMANDS ----------
+            window.addEventListener('keydown', (e) => {
+                // ignore if typing in any (no input fields, but safe)
+                const tag = e.target.tagName.toLowerCase();
+                if (tag === 'input' || tag === 'textarea' || tag === 'button') return;
+
+                // pause on command (spacebar)
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    if (playbackVideo) playbackVideo.pause();
                 }
-                
-                if (streamKeepAliveInterval) {
-                    clearInterval(streamKeepAliveInterval);
-                    streamKeepAliveInterval = null;
-                }
-                
-                overlay.classList.remove('hidden');
-                exitNote.classList.add('hidden');
-                sourceIndicator.classList.add('hidden');
-                liveIndicator.classList.add('hidden');
-                videoInfo.classList.add('hidden');
-                loopIndicator.classList.add('hidden');
-                
-                videoPlayer.pause();
-                videoPlayer.src = '';
-                videoPlayer.load();
-                videoPlayer.style.display = 'none';
-                
-                if (ytPlayer) {
-                    ytPlayer.destroy();
-                    ytPlayer = null;
-                }
-                
-                // Clear YouTube player container
-                youtubePlayer.innerHTML = '';
-                youtubePlayer.style.display = 'none';
-                
-                fileInput.value = '';
-                selectedFileInfo.textContent = '';
-                youtubeUrl.value = '';
-                streamUrl.value = '';
-                errorMessage.textContent = '';
-                isLiveStream = false;
-                
-                loadingIndicator.classList.remove('show');
-                loadingIndicator.classList.remove('live-loading');
-                
-                URL.revokeObjectURL(videoPlayer.src);
-            }
-        }
-        
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-        
-        // Prevent drag and drop
-        document.addEventListener('dragover', (e) => e.preventDefault());
-        document.addEventListener('drop', (e) => e.preventDefault());
-        
-        // Visibility change
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && (document.fullscreenElement || document.webkitFullscreenElement)) {
-                if (videoPlayer.src && videoPlayer.paused) {
-                    videoPlayer.play().catch(() => {});
-                }
-                
-                if (ytPlayer) {
-                    const state = ytPlayer.getPlayerState();
-                    if (state === YT.PlayerState.PAUSED) {
-                        ytPlayer.playVideo();
+                // < go back (left arrow) - move 1 sec back
+                else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (playbackVideo && videoDuration) {
+                        playbackVideo.currentTime = Math.max(0, playbackVideo.currentTime - 1);
                     }
                 }
-            }
-        });
-        
-        // Load HLS.js for HLS support
-        function loadHLSjs() {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
-            document.head.appendChild(script);
-        }
-        
-        // Initialize
-        loadYouTubeAPI();
-        loadHLSjs();
-        console.log('Universal Video Player with Live Support ready');
+                // > go forward (right arrow) - move 1 sec forward, capped at end
+                else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (playbackVideo && videoDuration) {
+                        playbackVideo.currentTime = Math.min(videoDuration, playbackVideo.currentTime + 1);
+                    }
+                }
+                // s speed up
+                else if (e.key === 's' || e.key === 'S') {
+                    e.preventDefault();
+                    playbackSpeed = Math.min(3, playbackSpeed + 0.25);
+                    if (playbackVideo) playbackVideo.playbackRate = playbackSpeed;
+                    statusSpan.innerHTML = `⚡ speed ${playbackSpeed.toFixed(2)}x`;
+                }
+                // w slow down
+                else if (e.key === 'w' || e.key === 'W') {
+                    e.preventDefault();
+                    playbackSpeed = Math.max(0.25, playbackSpeed - 0.25);
+                    if (playbackVideo) playbackVideo.playbackRate = playbackSpeed;
+                    statusSpan.innerHTML = `🐢 speed ${playbackSpeed.toFixed(2)}x`;
+                }
+                // + 100+ quality
+                else if (e.key === '+' || e.key === '=') {
+                    e.preventDefault();
+                    qualityLevel = Math.min(200, qualityLevel + 10);
+                    statusSpan.innerHTML = `⬆️ quality ${qualityLevel}%`;
+                }
+                // - 100- quality
+                else if (e.key === '-' || e.key === '_') {
+                    e.preventDefault();
+                    qualityLevel = Math.max(20, qualityLevel - 10);
+                    statusSpan.innerHTML = `⬇️ quality ${qualityLevel}%`;
+                }
+            });
+
+            // Event listeners
+            startBtn.addEventListener('click', startRecording);
+            stopBtn.addEventListener('click', stopAction);
+            downloadBtn.addEventListener('click', downloadCut);
+
+            // Initial UI
+            setUiForRecording(false);
+        })();
     </script>
 </body>
 </html>
