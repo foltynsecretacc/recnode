@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNIVERSAL · ADVANCED ADBLOCK X100 · space=pause / K=play</title>
+    <title>UNIVERSAL · X100 ADBLOCK + EMBED · space=pause / K=play</title>
     <style>
         * {
             margin: 0;
@@ -40,7 +40,7 @@
             pointer-events: none;
         }
 
-        /* AGGRESSIVE AD BLOCK X100 - MEGA KILLER SELECTORS */
+        /* X100 AGGRESSIVE AD BLOCK - ONLY TARGETS ADS, NOT UI */
         .video-ads, .ytp-ad-module, .ytp-ad-image-overlay, .ytp-ad-overlay-container,
         .ytp-ad-skip-button-container, .ytp-ad-player-overlay, .ytp-ad-text,
         .ytp-ad-progress, .ytp-ad-badge, .ytp-ad-skip-button, .ytp-ad-preview-container,
@@ -48,24 +48,13 @@
         .ad-container, .ad-showing, .ad-div, .ytp-ad-visit-advertiser-button,
         [class*="ad-"], [id*="google_ads"], [id*="ad-container"], [class*="AdContainer"],
         [class*="advertisement"], [class*="sponsor"], [class*="promo"], [id*="ad-"],
-        [class*="AdModule"], [class*="adModule"], [class*="adBox"], [class*="adBox"],
-        .ytp-pause-overlay, .ytp-endscreen-content, .ytp-ce-element,
-        .ytp-title, .ytp-chrome-top, .ytp-gradient-top,
-        .ytp-progress-bar, .ytp-time-display, .ytp-watermark, .ytp-youtube-button,
-        .ytp-chrome-bottom, .ytp-title-text, .ytp-title-link, .ytp-title-channel,
-        .ytp-share-icon, .ytp-watch-later-icon, .ytp-settings-icon,
-        .ytp-size-icon, .ytp-subtitles-icon, .ytp-playlist-icon,
-        .ytp-fullscreen-button, .ytp-chrome-top-buttons, .ytp-chapter-title,
-        .ytp-upnext, .ytp-suggestions, .ytp-mute-button, .ytp-volume-panel,
-        .ytp-play-button, .ytp-miniplayer-button, .ytp-cards-button,
-        .annotation, .annotation-container, .branding, .iv-branding,
-        [class*="branding"], [class*="Branding"], [class*="overlay-"],
+        [class*="AdModule"], [class*="adModule"], [class*="adBox"],
         .ytd-compact-promoted-video-renderer, .ytd-promoted-video-renderer,
         .ytd-promoted-sparkles-web-renderer, .ytd-display-ad-renderer,
         .ytd-statement-banner-renderer, .ytd-ad-slot-renderer, .ytd-in-feed-ad-layout-renderer,
         ytd-promoted-sparkles-video-renderer, ytd-promoted-video,
         ytd-compact-promoted-item-renderer, ytd-promoted-sparkles-text-search-renderer,
-        .ad-badge, .ad-slot, .ad-container, .ad-wrapper, .ad-frame,
+        .ad-badge, .ad-slot, .ad-wrapper, .ad-frame,
         [class*="AdBadge"], [class*="adBadge"], [id*="adBadge"],
         .ytm-ad-badge, .ytm-sponsored, .sponsored, .ytd-compact-promoted-video-renderer,
         #masthead-ad, #player-ads, #ad_zone, #ad_container, #adSlot,
@@ -148,6 +137,8 @@
         .tab.active { background: #4CAF50; color: white; }
         .tab.live-tab { border: 1px solid #ff4444; color: #ff8888; }
         .tab.live-tab.active { background: #ff4444; color: white; border-color: #ff4444; }
+        .tab.embed-tab { border: 1px solid #4CAF50; color: #88ff88; }
+        .tab.embed-tab.active { background: #4CAF50; color: white; }
 
         .tab-content { display: none; animation: fade 0.25s; }
         .tab-content.active { display: block; }
@@ -186,7 +177,19 @@
         }
         @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; box-shadow: 0 0 15px #ff4444; } }
 
-        input {
+        .embed-badge {
+            background: #4CAF50;
+            color: white;
+            padding: 6px 18px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 15px;
+            animation: pulse 1.8s infinite;
+        }
+
+        input, textarea {
             width: 100%;
             background: #222;
             border: 1px solid #3a3a3a;
@@ -196,10 +199,17 @@
             font-size: 1rem;
             margin-bottom: 18px;
         }
-        input:focus { outline: none; border-color: #4CAF50; background: #1e1e1e; }
+        textarea {
+            border-radius: 30px;
+            resize: vertical;
+            min-height: 100px;
+            font-family: monospace;
+        }
+        input:focus, textarea:focus { outline: none; border-color: #4CAF50; background: #1e1e1e; }
         #streamUrl:focus { border-color: #ff4444; }
+        #embedCode:focus { border-color: #4CAF50; }
 
-        .stream-button, .youtube-button {
+        .stream-button, .youtube-button, .embed-button {
             width: 100%;
             border: none;
             padding: 16px;
@@ -213,8 +223,10 @@
         }
         .stream-button { background: #ff4444; box-shadow: 0 5px 20px #ff444470; }
         .youtube-button { background: #c4302b; box-shadow: 0 5px 20px #c4302b70; }
+        .embed-button { background: #4CAF50; box-shadow: 0 5px 20px #4caf5070; }
         .stream-button:hover { background: #cc3333; transform: scale(1.01); }
         .youtube-button:hover { background: #a02723; }
+        .embed-button:hover { background: #45a049; }
 
         .examples {
             background: #1c1c1c;
@@ -237,6 +249,7 @@
             border-left: 3px solid #4CAF50;
         }
         .examples.live-examples li { border-left-color: #ff4444; color: #ffbbbb; }
+        .examples.embed-examples li { border-left-color: #4CAF50; color: #aaffaa; }
         .examples li:hover { background: #333; color: white; }
 
         .stream-info {
@@ -249,6 +262,17 @@
         }
         .stream-info h4 { color: #ff8888; }
         .stream-info code { background: #111; padding: 3px 8px; border-radius: 12px; }
+
+        .embed-info {
+            background: #1a1a1a;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            border-radius: 16px;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+        .embed-info h4 { color: #88ff88; }
+        .embed-info code { background: #111; padding: 3px 8px; border-radius: 12px; }
 
         .error-message { color: #ff6b6b; margin: 15px 0; min-height: 24px; }
 
@@ -266,6 +290,7 @@
             font-weight: 500;
         }
         .loading.live-loading { border-color: #ff4444; }
+        .loading.embed-loading { border-color: #4CAF50; }
         .loading.show { display: block; animation: pulse 1.5s infinite; }
 
         .exit-note, .source-indicator, .live-indicator, .video-info, .loop-indicator, .control-hint {
@@ -298,11 +323,12 @@
 
     <div id="overlay">
         <div class="selector-container">
-            <h2>🎬 <span>UNIVERSAL X100</span> · space=pause / K=play · MEGA ADBLOCK</h2>
+            <h2>🎬 <span>UNIVERSAL X100</span> · space=pause / K=play · +EMBED</h2>
             <div class="tab-container">
                 <button class="tab active" onclick="switchTab('file')">📁 FILE</button>
                 <button class="tab" onclick="switchTab('youtube')">▶️ YOUTUBE</button>
                 <button class="tab live-tab" onclick="switchTab('live')">🔴 LIVE</button>
+                <button class="tab embed-tab" onclick="switchTab('embed')">🔌 EMBED</button>
             </div>
 
             <div id="fileTab" class="tab-content active">
@@ -322,7 +348,7 @@
                         <ul>
                             <li onclick="fillExample('youtube', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ')">🎵 Rick Astley</li>
                             <li onclick="fillExample('youtube', 'https://youtu.be/jNQXAC9IVRw')">📹 first YouTube ever</li>
-                            <li onclick="fillExample('youtube', 'https://www.youtube.com/watch?v=21X5lGlDOfg')">🔴 NASA live (example)</li>
+                            <li onclick="fillExample('youtube', 'https://www.youtube.com/watch?v=21X5lGlDOfg')">🔴 NASA live</li>
                         </ul>
                     </div>
                 </div>
@@ -343,10 +369,32 @@
                     <div class="examples live-examples">
                         <p>🔴 live examples:</p>
                         <ul>
-                            <li onclick="fillExample('live', 'https://www.youtube.com/watch?v=21X5lGlDOfg')">📡 NASA live (YouTube)</li>
-                            <li onclick="fillExample('live', 'https://www.twitch.tv/riotgames')">🎮 Riot Games (Twitch)</li>
+                            <li onclick="fillExample('live', 'https://www.youtube.com/watch?v=21X5lGlDOfg')">📡 NASA live</li>
+                            <li onclick="fillExample('live', 'https://www.twitch.tv/riotgames')">🎮 Riot Games</li>
                             <li onclick="fillExample('live', 'https://www.youtube.com/watch?v=5qap5aO4i9A')">🌍 Earth from space</li>
-                            <li onclick="fillExample('live', 'https://www.twitch.tv/xqc')">🎲 xQc (Twitch)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="embedTab" class="tab-content">
+                <div class="url-input-container">
+                    <span class="embed-badge">🔌 EMBED</span>
+                    <p>paste any embed code or iframe</p>
+                    <textarea id="embedCode" placeholder='<iframe src="https://player.vimeo.com/video/123456789" width="100%" height="100%" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>'></textarea>
+                    <button class="embed-button" onclick="loadEmbedCode()">🔌 EMBED & PLAY</button>
+                    <div class="embed-info">
+                        <h4>supports:</h4>
+                        <p>• Vimeo · Dailymotion · Twitch clips</p>
+                        <p>• Any iframe embed · Custom players</p>
+                        <p><code>X100 adblock works on embedded content too</code></p>
+                    </div>
+                    <div class="examples embed-examples">
+                        <p>🔌 embed examples:</p>
+                        <ul>
+                            <li onclick="fillExample('embed', 'https://player.vimeo.com/video/76979871?autoplay=1&background=1')">🎥 Vimeo - Big Buck</li>
+                            <li onclick="fillExample('embed', 'https://www.dailymotion.com/embed/video/x8ddnt1?autoplay=1')">🎬 Dailymotion</li>
+                            <li onclick="fillExample('embed', 'https://clips.twitch.tv/embed?clip=InventiveSpineyBillHassaanChop&parent=localhost&autoplay=true')">🎮 Twitch clip</li>
                         </ul>
                     </div>
                 </div>
@@ -355,7 +403,7 @@
             <div class="error-message" id="errorMessage"></div>
             <p style="color:#444; font-size:0.7rem; border-top:1px solid #222; margin-top:25px; padding-top:15px;">
                 ⏸️ SPACE = pause · ▶️ K = play · ←/→ = -10s/+10s · +/- = speed · ↑/↓ = quality (YouTube)<br>
-                ESC = exit fullscreen · X100 ADBLOCK (annihilates all ads & overlays)
+                ESC = exit fullscreen · X100 ADBLOCK (kills ads, keeps UI) · EMBED tab added
             </p>
         </div>
     </div>
@@ -370,7 +418,7 @@
 
     <script>
         (function() {
-            // ----- X100 ULTRA AGGRESSIVE AD BLOCKER -----
+            // ----- X100 ULTRA AGGRESSIVE AD BLOCKER (PRESERVES UI) -----
             const AD_SELECTORS = [
                 '.video-ads', '.ytp-ad-module', '.ytp-ad-image-overlay', '.ytp-ad-overlay-container',
                 '.ytp-ad-skip-button-container', '.ytp-ad-player-overlay', '.ytp-ad-text',
@@ -379,18 +427,7 @@
                 '.ad-container', '.ad-showing', '.ad-div', '.ytp-ad-visit-advertiser-button',
                 '[class*="ad-"]', '[id*="google_ads"]', '[id*="ad-container"]', '[class*="AdContainer"]',
                 '[class*="advertisement"]', '[class*="sponsor"]', '[class*="promo"]', '[id*="ad-"]',
-                '[class*="AdModule"]', '[class*="adModule"]', '[class*="adBox"]', '[class*="adBox"]',
-                '.ytp-pause-overlay', '.ytp-endscreen-content', '.ytp-ce-element',
-                '.ytp-title', '.ytp-chrome-top', '.ytp-gradient-top',
-                '.ytp-progress-bar', '.ytp-time-display', '.ytp-watermark', '.ytp-youtube-button',
-                '.ytp-chrome-bottom', '.ytp-title-text', '.ytp-title-link', '.ytp-title-channel',
-                '.ytp-share-icon', '.ytp-watch-later-icon', '.ytp-settings-icon',
-                '.ytp-size-icon', '.ytp-subtitles-icon', '.ytp-playlist-icon',
-                '.ytp-fullscreen-button', '.ytp-chrome-top-buttons', '.ytp-chapter-title',
-                '.ytp-upnext', '.ytp-suggestions', '.ytp-mute-button', '.ytp-volume-panel',
-                '.ytp-play-button', '.ytp-miniplayer-button', '.ytp-cards-button',
-                '.annotation', '.annotation-container', '.branding', '.iv-branding',
-                '[class*="branding"]', '[class*="Branding"]', '[class*="overlay-"]',
+                '[class*="AdModule"]', '[class*="adModule"]', '[class*="adBox"]',
                 '.ytd-compact-promoted-video-renderer', '.ytd-promoted-video-renderer',
                 '.ytd-promoted-sparkles-web-renderer', '.ytd-display-ad-renderer',
                 '.ytd-statement-banner-renderer', '.ytd-ad-slot-renderer', '.ytd-in-feed-ad-layout-renderer',
@@ -406,11 +443,7 @@
                 '.ytp-ad-skip-button-modern', '.ytp-ad-preview-container', '.ytp-ad-progress-list',
                 '.ytp-ad-player-overlay', '.ytp-ad-message-container', '.ytp-ad-badge-container',
                 '[class*="ytp-ad-"]', '[id*="ytp-ad-"]', '[class*="ytd-ad-"]', '[id*="ytd-ad-"]',
-                'iframe[src*="doubleclick"]', 'iframe[src*="googleads"]', 'iframe[src*="ad"]',
-                'iframe[id*="ad"]', 'iframe[class*="ad"]', 'iframe[src*="adservice"]',
-                'img[src*="doubleclick"]', 'img[src*="googleads"]', 'img[src*="ad"]',
-                'div[data-ad*="true"]', 'div[data-ad*="Ad"]', 'div[data-advertisement]',
-                'div[data-sponsored]', 'div[data-promoted]'
+                'iframe[src*="doubleclick"]', 'iframe[src*="googleads"]', 'iframe[src*="adservice"]'
             ];
 
             function megaAdBlockCleanup() {
@@ -437,40 +470,15 @@
                                     fontSize: '0 !important'
                                 };
                                 Object.assign(el.style, styles);
-                                try { el.parentNode.removeChild(el); } catch(e) {}
+                                try { if (el.parentNode) el.parentNode.removeChild(el); } catch(e) {}
                             }
                         });
                     } catch(e) {}
                 });
 
-                document.querySelectorAll('*').forEach(el => {
-                    const attrs = el.attributes;
-                    for (let i = 0; i < attrs.length; i++) {
-                        const attr = attrs[i];
-                        if (attr.name.includes('ad') || attr.name.includes('Ad') || 
-                            attr.value.includes('ad') || attr.value.includes('Ad') ||
-                            attr.name.includes('sponsor') || attr.name.includes('promo') ||
-                            attr.name.includes('doubleclick') || attr.name.includes('googleads')) {
-                            try {
-                                if (el && el.parentNode) {
-                                    el.style.display = 'none';
-                                    el.parentNode.removeChild(el);
-                                }
-                            } catch(e) {}
-                            break;
-                        }
-                    }
-                });
-
-                document.querySelectorAll('iframe').forEach(iframe => {
+                document.querySelectorAll('iframe[src*="doubleclick"], iframe[src*="googleads"], iframe[src*="adservice"]').forEach(iframe => {
                     try {
-                        const src = iframe.src || '';
-                        if (src.includes('doubleclick') || src.includes('googleads') || 
-                            src.includes('adservice') || src.includes('ad.') ||
-                            iframe.id.includes('ad') || iframe.className.includes('ad')) {
-                            iframe.style.display = 'none';
-                            if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-                        }
+                        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
                     } catch(e) {}
                 });
             }
@@ -489,6 +497,7 @@
             const selectedFileInfo = document.getElementById('selectedFileInfo');
             const youtubeUrl = document.getElementById('youtubeUrl');
             const streamUrl = document.getElementById('streamUrl');
+            const embedCode = document.getElementById('embedCode');
             const loading = document.getElementById('loadingIndicator');
             const exitNote = document.getElementById('exitNote');
             const sourceIndicator = document.getElementById('sourceIndicator');
@@ -691,6 +700,56 @@
                 videoPlayer.addEventListener('contextmenu', e => e.preventDefault());
             }
 
+            // ----- EMBED FUNCTIONALITY (ADDED BACK) -----
+            window.loadEmbedCode = function() {
+                const code = embedCode.value.trim();
+                if (!code) { errorMsg.textContent = 'paste embed code or URL'; return; }
+                
+                loading.classList.add('show', 'embed-loading');
+                errorMsg.textContent = '';
+
+                let embedHtml = code;
+                
+                if (code.startsWith('http')) {
+                    if (code.includes('vimeo.com')) {
+                        const vimeoMatch = code.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+                        if (vimeoMatch) {
+                            embedHtml = `<iframe src="https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&background=1" width="100%" height="100%" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+                        }
+                    } else if (code.includes('dailymotion.com')) {
+                        const dmMatch = code.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/);
+                        if (dmMatch) {
+                            embedHtml = `<iframe src="https://www.dailymotion.com/embed/video/${dmMatch[1]}?autoplay=1" width="100%" height="100%" frameborder="0" allow="autoplay" allowfullscreen></iframe>`;
+                        }
+                    } else if (code.includes('twitch.tv')) {
+                        if (code.includes('/clip/')) {
+                            const clipMatch = code.match(/twitch\.tv\/(?:[^\/]+\/clip\/|clip\/)?([a-zA-Z0-9]+)/);
+                            if (clipMatch) {
+                                embedHtml = `<iframe src="https://clips.twitch.tv/embed?clip=${clipMatch[1]}&parent=${window.location.hostname}&autoplay=true" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>`;
+                            }
+                        }
+                    }
+                }
+
+                youtubePlayer.style.display = 'block';
+                videoPlayer.style.display = 'none';
+                youtubePlayer.innerHTML = embedHtml;
+                
+                isLiveStream = false;
+                
+                enterFullscreen();
+                hideOverlayAndShowIndicators('embedded content', false);
+                loading.classList.remove('show');
+                
+                setTimeout(() => {
+                    const iframe = youtubePlayer.querySelector('iframe');
+                    if (iframe) {
+                        iframe.style.pointerEvents = 'none';
+                    }
+                    megaAdBlockCleanup();
+                }, 500);
+            };
+
             window.loadLiveStream = function() {
                 const url = streamUrl.value.trim();
                 if (!url) { errorMsg.textContent = 'enter URL'; return; }
@@ -880,7 +939,7 @@
                     youtubePlayer.innerHTML = ''; youtubePlayer.style.display = 'none';
                     videoPlayer.style.display = 'none';
                     fileInput.value = ''; selectedFileInfo.textContent = '';
-                    youtubeUrl.value = ''; streamUrl.value = '';
+                    youtubeUrl.value = ''; streamUrl.value = ''; embedCode.value = '';
                     errorMsg.textContent = '';
                     loading.classList.remove('show');
                 }
@@ -891,15 +950,29 @@
             window.switchTab = (t) => {
                 document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-                if (t==='file') { document.querySelectorAll('.tab')[0].classList.add('active'); document.getElementById('fileTab').classList.add('active'); }
-                if (t==='youtube') { document.querySelectorAll('.tab')[1].classList.add('active'); document.getElementById('youtubeTab').classList.add('active'); }
-                if (t==='live') { document.querySelectorAll('.tab')[2].classList.add('active'); document.getElementById('liveTab').classList.add('active'); }
+                if (t==='file') { 
+                    document.querySelectorAll('.tab')[0].classList.add('active'); 
+                    document.getElementById('fileTab').classList.add('active'); 
+                }
+                if (t==='youtube') { 
+                    document.querySelectorAll('.tab')[1].classList.add('active'); 
+                    document.getElementById('youtubeTab').classList.add('active'); 
+                }
+                if (t==='live') { 
+                    document.querySelectorAll('.tab')[2].classList.add('active'); 
+                    document.getElementById('liveTab').classList.add('active'); 
+                }
+                if (t==='embed') { 
+                    document.querySelectorAll('.tab')[3].classList.add('active'); 
+                    document.getElementById('embedTab').classList.add('active'); 
+                }
                 errorMsg.textContent = '';
             };
 
             window.fillExample = (type, url) => {
                 if (type === 'youtube') youtubeUrl.value = url;
-                else streamUrl.value = url;
+                else if (type === 'live') streamUrl.value = url;
+                else if (type === 'embed') embedCode.value = url;
             };
 
             loadYouTubeAPI();
